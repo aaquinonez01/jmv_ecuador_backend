@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    ports:
+      - ${DATABASE_PORT}:5432
+    container_name: jmv_database
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jmv_backend
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      PORT: ${PORT:-3002}
+    depends_on:
+      - db
+    ports:
+      - "3002:3002"
+  frontend:
+    build:
+      context: ../jmv_web_oficial
+      dockerfile: Dockerfile
+      args:
+        SKIP_REMOTE_FETCH: "1"
+    container_name: jmv_frontend
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3002/api
+      INTERNAL_API_URL: http://backend:3002/api
+      NODE_ENV: production
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"

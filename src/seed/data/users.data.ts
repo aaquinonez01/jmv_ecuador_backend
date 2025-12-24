@@ -1,0 +1,36 @@
+import { User } from 'src/auth/entities/user';
+
+export const usersData: User[] = [
+  {
+    email: 'jmv.ecuador@gmail.com',
+    password: 'Jmv2025',
+    fullName: 'JMV Consejo Nacional Ecuador',
+    role: 'admin',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    displayName: 'JMV Consejo Nacional Ecuador',
+    profilePicture: 'https://via.placeholder.com/150',
+    birthDate: new Date(),
+    phoneNumber: '0989815664',
+    address: 'Quito, Ecuador',
+    bio: 'Esta es la cuenta oficial del JMV Consejo Nacional Ecuador',
+    posts: [],
+  },
+  {
+    email: 'jmv.flowVicentino@user.com',
+    password: 'Jmv2025',
+    fullName: 'Jmv Latacunga Flow Vicentino',
+    role: 'user',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    displayName: 'Jmv Latacunga Flow Vicentino',
+    profilePicture: 'https://via.placeholder.com/150',
+    birthDate: new Date(),
+    phoneNumber: '1234567890',
+    address: 'Latacunga, Ecuador',
+    bio: 'Esta es la cuenta oficial del Jmv Latacunga Flow Vicentino',
+    posts: [],
+  },
+];
