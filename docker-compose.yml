@@ -34,7 +34,7 @@ services:
     container_name: jmv_frontend
     restart: always
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3002/api
+      NEXT_PUBLIC_API_URL: https://jmvecuador.org/api # ← Cambiar a tu dominio
       INTERNAL_API_URL: http://backend:3002/api
       NODE_ENV: production
     depends_on:

@@ -2,7 +2,7 @@ import { User } from 'src/auth/entities/user';
 
 export const usersData: User[] = [
   {
-    email: 'jmv.ecuador@gmail.com',
+    email: 'jmvecuador@gmail.com',
     password: 'Jmv2025',
     fullName: 'JMV Consejo Nacional Ecuador',
     role: 'admin',
