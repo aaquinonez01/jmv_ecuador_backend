@@ -18,7 +18,7 @@ export const usersData: User[] = [
     posts: [],
   },
   {
-    email: 'jmv.flowVicentino@user.com',
+    email: 'jmv.flowVicentino@gmail.com',
     password: 'Jmv2025',
     fullName: 'Jmv Latacunga Flow Vicentino',
     role: 'user',
