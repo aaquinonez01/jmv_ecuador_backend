@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
       POSTGRES_DB: ${DATABASE_NAME}
     ports:
-      - ${DATABASE_PORT}:5432
+      - "5437:5432" # ← Cambia a 5437:5432 para que sea accesible externamente
     container_name: jmv_database
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
