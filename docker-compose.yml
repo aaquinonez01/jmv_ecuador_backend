@@ -27,7 +27,7 @@ services:
       - "3002:3002"
   frontend:
     build:
-      context: ../jmv_web_oficial
+      context: ../jmv_ecuador_web
       dockerfile: Dockerfile
       args:
         SKIP_REMOTE_FETCH: "1"
