@@ -72,6 +72,61 @@ export async function uploadSingleImage(
   });
 }
 
+export async function uploadImagesToFolder(
+  files: Express.Multer.File[],
+  folder: string,
+): Promise<string[]> {
+  if (!files || files.length === 0) {
+    return [];
+  }
+
+  return Promise.all(
+    files.map((file) => uploadSingleImage(file, folder) as Promise<string>),
+  );
+}
+
+export async function uploadSingleRawFile(
+  file: Express.Multer.File,
+  folder: string,
+): Promise<string | null> {
+  if (!file) {
+    return null;
+  }
+
+  return new Promise<string>((resolve, reject) => {
+    const upload = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: 'raw',
+        public_id: file.originalname.replace(/\.[^/.]+$/, ''),
+      },
+      (err, result) => {
+        if (err) {
+          reject(toError(err));
+        } else if (!result) {
+          reject(new Error('Error al subir el archivo: resultado vacio'));
+        } else {
+          resolve(result.secure_url);
+        }
+      },
+    );
+    bufferToStream(file.buffer).pipe(upload);
+  });
+}
+
+export async function uploadRawFilesToFolder(
+  files: Express.Multer.File[],
+  folder: string,
+): Promise<string[]> {
+  if (!files || files.length === 0) {
+    return [];
+  }
+
+  return Promise.all(
+    files.map((file) => uploadSingleRawFile(file, folder) as Promise<string>),
+  );
+}
+
 export async function uploadAvatar(
   file: Express.Multer.File,
 ): Promise<string | null> {

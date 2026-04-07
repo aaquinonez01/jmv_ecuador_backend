@@ -66,14 +66,18 @@ export class AuthService {
 
   async loginUser(loginUserDto: LoginUserDto) {
     const { email, password } = loginUserDto;
+    console.log(email, password);
     const user = await this.userRepository.findOne({ where: { email } });
+    console.log(user);
     if (!user) {
+      console.log('El usuario no existe');
       throw new BadRequestException('El usuario no existe');
     }
     const isPasswordValid = bcrypt.compareSync(password, user.password);
     if (!isPasswordValid) {
       throw new BadRequestException('La contraseña es incorrecta');
     }
+    console.log(user);
     const payload: JwtPayload = {
       email: user.email,
       role: user.role,

@@ -8,6 +8,11 @@ import { AuthModule } from './auth/auth.module';
 import { SeedModule } from './seed/seed.module';
 import { SiteImagesModule } from './site_images/site_images.module';
 import { ActivityCategoriesModule } from './activity_categories/activity_categories.module';
+import { ActivityPillarsModule } from './activity_pillars/activity_pillars.module';
+import { ActivityTypesModule } from './activity_types/activity_types.module';
+import { ActivitiesModule } from './activities/activities.module';
+import { UpcomingActivitiesModule } from './upcoming_activities/upcoming_activities.module';
+import { TestimonialsModule } from './testimonials/testimonials.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -28,6 +33,11 @@ import { ActivityCategoriesModule } from './activity_categories/activity_categor
     SeedModule,
     SiteImagesModule,
     ActivityCategoriesModule,
+    ActivityPillarsModule,
+    ActivityTypesModule,
+    ActivitiesModule,
+    UpcomingActivitiesModule,
+    TestimonialsModule,
   ],
   controllers: [],
   providers: [],
