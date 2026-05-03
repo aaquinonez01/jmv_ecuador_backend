@@ -33,10 +33,11 @@ services:
       dockerfile: Dockerfile
       args:
         SKIP_REMOTE_FETCH: "1"
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://66.94.116.56:3002/api} # ← se inlinea en el bundle del navegador
     container_name: jmv_frontend
     restart: always
     environment:
-      NEXT_PUBLIC_API_URL: https://jmvecuador.org/api # ← Cambiar a tu dominio
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://66.94.116.56:3002/api}
       INTERNAL_API_URL: http://backend:3002/api
       NODE_ENV: production
     depends_on:
