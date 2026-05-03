@@ -21,6 +21,8 @@ services:
       - ./.env
     environment:
       PORT: ${PORT:-3002}
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
     depends_on:
       - db
     ports:
