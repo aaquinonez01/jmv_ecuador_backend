@@ -8,6 +8,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UpcomingActivity } from './entities/upcoming-activity.entity';
 import { UpcomingActivityDocument } from './entities/upcoming-activity-document.entity';
+import { ActivityPillar } from 'src/activity_pillars/entities/activity-pillar.entity';
+import { ActivityTypeCatalog } from 'src/activity_types/entities/activity-type.entity';
 import { CreateUpcomingActivityDto } from './dto/create-upcoming-activity.dto';
 import { UpdateUpcomingActivityDto } from './dto/update-upcoming-activity.dto';
 import { FilterUpcomingActivitiesDto } from './dto/filter-upcoming-activities.dto';
@@ -45,8 +47,8 @@ export class UpcomingActivitiesService {
     return value instanceof Date ? value : new Date(value);
   }
 
-  private parseDocumentTypes(value?: string, count = 0) {
-    if (!value) return new Array(count).fill('otro');
+  private parseDocumentTypes(value?: string, count = 0): string[] {
+    if (!value) return new Array<string>(count).fill('otro');
     const parsed = value
       .split(',')
       .map((item) => item.trim())
@@ -108,6 +110,10 @@ export class UpcomingActivitiesService {
     };
   }
 
+  private relationById<T extends { id: string }>(id?: string): T | undefined {
+    return id ? ({ id } as T) : undefined;
+  }
+
   async create(
     dto: CreateUpcomingActivityDto,
     files: {
@@ -151,8 +157,8 @@ export class UpcomingActivitiesService {
         featuredInHome: this.normalizeBoolean(dto.featuredInHome, false),
         showInHome: this.normalizeBoolean(dto.showInHome, true),
         displayOrder: this.normalizeNumber(dto.displayOrder, count + 1),
-        pillar: dto.pillarId ? ({ id: dto.pillarId } as any) : undefined,
-        type: dto.typeId ? ({ id: dto.typeId } as any) : undefined,
+        pillar: this.relationById<ActivityPillar>(dto.pillarId),
+        type: this.relationById<ActivityTypeCatalog>(dto.typeId),
         documents: documentUrls.map((url, index) =>
           this.documentRepository.create({
             name: documentFiles[index]?.originalname || `documento-${index + 1}`,
@@ -325,9 +331,11 @@ export class UpcomingActivitiesService {
           ? this.normalizeNumber(dto.displayOrder, activity.displayOrder)
           : activity.displayOrder;
       activity.pillar = dto.pillarId
-        ? ({ id: dto.pillarId } as any)
+        ? this.relationById<ActivityPillar>(dto.pillarId)
         : activity.pillar;
-      activity.type = dto.typeId ? ({ id: dto.typeId } as any) : activity.type;
+      activity.type = dto.typeId
+        ? this.relationById<ActivityTypeCatalog>(dto.typeId)
+        : activity.type;
 
       const saved = await this.upcomingRepository.save(activity);
       return this.mapUpcoming(saved);

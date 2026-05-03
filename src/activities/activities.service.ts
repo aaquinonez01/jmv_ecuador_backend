@@ -8,6 +8,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Activity } from './entities/activity.entity';
 import { ActivityImage } from './entities/activity-image.entity';
+import { ActivityPillar } from 'src/activity_pillars/entities/activity-pillar.entity';
+import { ActivityTypeCatalog } from 'src/activity_types/entities/activity-type.entity';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
 import { FilterActivitiesDto } from './dto/filter-activities.dto';
@@ -91,6 +93,10 @@ export class ActivitiesService {
     };
   }
 
+  private relationById<T extends { id: string }>(id?: string): T | undefined {
+    return id ? ({ id } as T) : undefined;
+  }
+
   async create(
     dto: CreateActivityDto,
     files: {
@@ -124,8 +130,8 @@ export class ActivitiesService {
         featured: this.normalizeBoolean(dto.featured, false),
         showInActivitiesPage: this.normalizeBoolean(dto.showInActivitiesPage, true),
         displayOrder: this.normalizeNumber(dto.displayOrder, count + 1),
-        pillar: dto.pillarId ? ({ id: dto.pillarId } as any) : undefined,
-        type: dto.typeId ? ({ id: dto.typeId } as any) : undefined,
+        pillar: this.relationById<ActivityPillar>(dto.pillarId),
+        type: this.relationById<ActivityTypeCatalog>(dto.typeId),
         gallery: galleryUrls.map((url, index) =>
           this.activityImageRepository.create({
             url,
@@ -270,9 +276,11 @@ export class ActivitiesService {
           ? this.normalizeNumber(dto.displayOrder, activity.displayOrder)
           : activity.displayOrder;
       activity.pillar = dto.pillarId
-        ? ({ id: dto.pillarId } as any)
+        ? this.relationById<ActivityPillar>(dto.pillarId)
         : activity.pillar;
-      activity.type = dto.typeId ? ({ id: dto.typeId } as any) : activity.type;
+      activity.type = dto.typeId
+        ? this.relationById<ActivityTypeCatalog>(dto.typeId)
+        : activity.type;
 
       const saved = await this.activityRepository.save(activity);
       return this.mapActivity(saved);

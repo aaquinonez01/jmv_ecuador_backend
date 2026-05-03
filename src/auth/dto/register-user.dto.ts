@@ -1,9 +1,10 @@
 import {
-  IsDate,
+  IsDateString,
   IsEmail,
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   MaxLength,
   MinLength,
@@ -48,8 +49,8 @@ export class RegisterUserDto {
   role: string;
 
   @IsNotEmpty()
-  @IsDate()
-  birthDate: Date;
+  @IsDateString()
+  birthDate: string;
 
   @IsNotEmpty()
   @IsString()
@@ -68,4 +69,8 @@ export class RegisterUserDto {
   @IsOptional()
   @MinLength(3)
   bio: string;
+
+  @IsOptional()
+  @IsUUID()
+  comunidadId?: string;
 }

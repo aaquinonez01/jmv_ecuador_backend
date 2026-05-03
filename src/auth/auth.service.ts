@@ -29,7 +29,7 @@ export class AuthService {
     avatar?: Express.Multer.File,
   ) {
     try {
-      const { password, ...userData } = registerUserDto;
+      const { password, comunidadId, ...userData } = registerUserDto;
       const newPassword = bcrypt.hashSync(password, 10);
 
       // Subir avatar si viene
@@ -40,7 +40,7 @@ export class AuthService {
 
       const newUser: User = this.userRepository.create({
         ...userData,
-
+        ...(comunidadId ? { comunidad: { id: comunidadId } } : {}),
         password: newPassword,
         ...(profilePicture ? { profilePicture } : {}),
       });
@@ -97,9 +97,11 @@ export class AuthService {
     avatar?: Express.Multer.File,
   ) {
     try {
+      const { comunidadId, ...profileData } = updateProfileDto;
       const user = await this.userRepository.preload({
         id: userId,
-        ...updateProfileDto,
+        ...profileData,
+        ...(comunidadId ? { comunidad: { id: comunidadId } } : {}),
       });
 
       if (!user) {

@@ -13,6 +13,12 @@ import { ActivityTypesModule } from './activity_types/activity_types.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { UpcomingActivitiesModule } from './upcoming_activities/upcoming_activities.module';
 import { TestimonialsModule } from './testimonials/testimonials.module';
+import { ZonasModule } from './zonas/zonas.module';
+import { ComunidadesModule } from './comunidades/comunidades.module';
+import { QuizModule } from './quiz/quiz.module';
+import { ConsejoNacionalModule } from './consejo_nacional/consejo-nacional.module';
+import { AsesoresModule } from './asesores/asesores.module';
+import { HomeAnnouncementsModule } from './home_announcements/home-announcements.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -38,6 +44,12 @@ import { TestimonialsModule } from './testimonials/testimonials.module';
     ActivitiesModule,
     UpcomingActivitiesModule,
     TestimonialsModule,
+    ZonasModule,
+    ComunidadesModule,
+    QuizModule,
+    ConsejoNacionalModule,
+    AsesoresModule,
+    HomeAnnouncementsModule,
   ],
   controllers: [],
   providers: [],

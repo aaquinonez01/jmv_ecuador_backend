@@ -1,5 +1,12 @@
+import { Comunidad } from 'src/comunidades/entities/comunidad.entity';
 import { Post } from 'src/posts/entities';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity()
 export class User {
@@ -58,6 +65,9 @@ export class User {
   @Column('text')
   phoneNumber: string;
 
+  @Column('text', { nullable: true })
+  nameComunity?: string | null;
+
   @Column('text')
   address: string;
 
@@ -68,4 +78,11 @@ export class User {
     cascade: true,
   })
   posts?: Post[];
+
+  @ManyToOne(() => Comunidad, (comunidad) => comunidad.usuarios, {
+    nullable: true,
+    onDelete: 'SET NULL',
+    eager: true,
+  })
+  comunidad?: Comunidad | null;
 }

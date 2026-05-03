@@ -1,4 +1,10 @@
-import { IsOptional, IsString, MinLength, IsDate } from 'class-validator';
+import {
+  IsDateString,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MinLength,
+} from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -12,8 +18,8 @@ export class UpdateProfileDto {
   displayName?: string;
 
   @IsOptional()
-  @IsDate()
-  birthDate?: Date;
+  @IsDateString()
+  birthDate?: string;
 
   @IsOptional()
   @IsString()
@@ -29,5 +35,9 @@ export class UpdateProfileDto {
   @IsString()
   @MinLength(3)
   bio?: string;
+
+  @IsOptional()
+  @IsUUID()
+  comunidadId?: string;
 }
 
