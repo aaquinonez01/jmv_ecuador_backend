@@ -36,6 +36,10 @@ export class ComunidadesService {
         nombre: createComunidadDto.nombre,
         ciudad: createComunidadDto.ciudad,
         correoElectronico: createComunidadDto.correoElectronico,
+        direccion: createComunidadDto.direccion ?? null,
+        telefono: createComunidadDto.telefono ?? null,
+        latitud: createComunidadDto.latitud ?? null,
+        longitud: createComunidadDto.longitud ?? null,
         zona,
       });
 
@@ -98,6 +102,22 @@ export class ComunidadesService {
 
       if (updateComunidadDto.correoElectronico !== undefined) {
         comunidad.correoElectronico = updateComunidadDto.correoElectronico;
+      }
+
+      if (updateComunidadDto.direccion !== undefined) {
+        comunidad.direccion = updateComunidadDto.direccion ?? null;
+      }
+
+      if (updateComunidadDto.telefono !== undefined) {
+        comunidad.telefono = updateComunidadDto.telefono ?? null;
+      }
+
+      if (updateComunidadDto.latitud !== undefined) {
+        comunidad.latitud = updateComunidadDto.latitud ?? null;
+      }
+
+      if (updateComunidadDto.longitud !== undefined) {
+        comunidad.longitud = updateComunidadDto.longitud ?? null;
       }
 
       return await this.comunidadRepository.save(comunidad);

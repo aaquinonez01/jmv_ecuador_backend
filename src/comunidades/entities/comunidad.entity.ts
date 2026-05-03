@@ -22,6 +22,18 @@ export class Comunidad {
   @Column({ type: 'varchar', length: 140 })
   correoElectronico!: string;
 
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  direccion?: string | null;
+
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  telefono?: string | null;
+
+  @Column({ type: 'double precision', nullable: true })
+  latitud?: number | null;
+
+  @Column({ type: 'double precision', nullable: true })
+  longitud?: number | null;
+
   @ManyToOne(() => Zona, (zona) => zona.comunidades, {
     nullable: false,
     onDelete: 'RESTRICT',
