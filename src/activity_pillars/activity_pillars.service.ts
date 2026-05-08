@@ -10,6 +10,9 @@ import { Repository } from 'typeorm';
 import { ActivityPillar } from './entities/activity-pillar.entity';
 import { CreateActivityPillarDto } from './dto/create-activity-pillar.dto';
 import { UpdateActivityPillarDto } from './dto/update-activity-pillar.dto';
+import { RevalidationService } from '../common/revalidation/revalidation.service';
+
+const PILLAR_TAGS = ['activity_pillars_public'];
 
 @Injectable()
 export class ActivityPillarsService {
@@ -18,6 +21,7 @@ export class ActivityPillarsService {
   constructor(
     @InjectRepository(ActivityPillar)
     private readonly repo: Repository<ActivityPillar>,
+    private readonly revalidation: RevalidationService,
   ) {}
 
   async create(dto: CreateActivityPillarDto) {
@@ -37,7 +41,9 @@ export class ActivityPillarsService {
         active: dto.active ?? true,
         order: count + 1,
       });
-      return await this.repo.save(pillar);
+      const saved = await this.repo.save(pillar);
+      void this.revalidation.revalidate(PILLAR_TAGS);
+      return saved;
     } catch (error) {
       this.handleExceptions(error);
     }
@@ -61,7 +67,9 @@ export class ActivityPillarsService {
       const slug =
         dto.slug || (dto.name ? this.generateSlug(dto.name) : pillar.slug);
       const merged = this.repo.merge(pillar, { ...dto, slug });
-      return await this.repo.save(merged);
+      const saved = await this.repo.save(merged);
+      void this.revalidation.revalidate(PILLAR_TAGS);
+      return saved;
     } catch (error) {
       this.handleExceptions(error);
     }
@@ -71,6 +79,7 @@ export class ActivityPillarsService {
     try {
       const pillar = await this.findOne(id);
       await this.repo.remove(pillar);
+      void this.revalidation.revalidate(PILLAR_TAGS);
       return { message: 'Pilar eliminado correctamente' };
     } catch (error) {
       this.handleExceptions(error);

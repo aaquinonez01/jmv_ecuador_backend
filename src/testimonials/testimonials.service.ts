@@ -11,6 +11,9 @@ import { CreateTestimonialDto } from './dto/create-testimonial.dto';
 import { UpdateTestimonialDto } from './dto/update-testimonial.dto';
 import { FilterTestimonialsDto } from './dto/filter-testimonials.dto';
 import { uploadSingleImage } from 'src/helpers/file-upload.helper';
+import { RevalidationService } from '../common/revalidation/revalidation.service';
+
+const TESTIMONIAL_TAGS = ['testimonials_home', 'testimonials_historia'];
 
 @Injectable()
 export class TestimonialsService {
@@ -19,6 +22,7 @@ export class TestimonialsService {
   constructor(
     @InjectRepository(Testimonial)
     private readonly repository: Repository<Testimonial>,
+    private readonly revalidation: RevalidationService,
   ) {}
 
   private normalizeBoolean(value?: string | boolean, defaultValue = false) {
@@ -69,6 +73,7 @@ export class TestimonialsService {
       });
 
       const saved = await this.repository.save(testimonial);
+      void this.revalidation.revalidate(TESTIMONIAL_TAGS);
       return this.mapTestimonial(saved);
     } catch (error) {
       this.handleExceptions(error);
@@ -162,6 +167,7 @@ export class TestimonialsService {
           : testimonial.displayOrder;
 
       const saved = await this.repository.save(testimonial);
+      void this.revalidation.revalidate(TESTIMONIAL_TAGS);
       return this.mapTestimonial(saved);
     } catch (error) {
       this.handleExceptions(error);
@@ -176,6 +182,7 @@ export class TestimonialsService {
       }
 
       await this.repository.remove(testimonial);
+      void this.revalidation.revalidate(TESTIMONIAL_TAGS);
       return { message: 'Testimonio eliminado correctamente' };
     } catch (error) {
       this.handleExceptions(error);

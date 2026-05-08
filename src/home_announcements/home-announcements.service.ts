@@ -13,6 +13,9 @@ import {
 } from './entities/home-announcement.entity';
 import { CreateHomeAnnouncementDto } from './dto/create-home-announcement.dto';
 import { UpdateHomeAnnouncementDto } from './dto/update-home-announcement.dto';
+import { RevalidationService } from '../common/revalidation/revalidation.service';
+
+const ANNOUNCEMENT_TAGS = ['home_announcements_active'];
 
 @Injectable()
 export class HomeAnnouncementsService {
@@ -21,6 +24,7 @@ export class HomeAnnouncementsService {
   constructor(
     @InjectRepository(HomeAnnouncement)
     private readonly repository: Repository<HomeAnnouncement>,
+    private readonly revalidation: RevalidationService,
   ) {}
 
   private normalizeBoolean(value?: string | boolean, defaultValue = false) {
@@ -87,6 +91,7 @@ export class HomeAnnouncementsService {
       });
 
       const saved = await this.repository.save(announcement);
+      void this.revalidation.revalidate(ANNOUNCEMENT_TAGS);
       return this.mapAnnouncement(saved);
     } catch (error) {
       this.handleExceptions(error);
@@ -180,6 +185,7 @@ export class HomeAnnouncementsService {
       }
 
       const saved = await this.repository.save(item);
+      void this.revalidation.revalidate(ANNOUNCEMENT_TAGS);
       return this.mapAnnouncement(saved);
     } catch (error) {
       this.handleExceptions(error);
@@ -193,6 +199,7 @@ export class HomeAnnouncementsService {
         throw new NotFoundException('Anuncio no encontrado');
       }
       await this.repository.remove(item);
+      void this.revalidation.revalidate(ANNOUNCEMENT_TAGS);
       return { message: 'Anuncio eliminado correctamente' };
     } catch (error) {
       this.handleExceptions(error);

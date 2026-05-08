@@ -10,6 +10,9 @@ import { Repository } from 'typeorm';
 import { ActivityTypeCatalog } from './entities/activity-type.entity';
 import { CreateActivityTypeDto } from './dto/create-activity-type.dto';
 import { UpdateActivityTypeDto } from './dto/update-activity-type.dto';
+import { RevalidationService } from '../common/revalidation/revalidation.service';
+
+const TYPE_TAGS = ['activity_types_public'];
 
 @Injectable()
 export class ActivityTypesService {
@@ -18,6 +21,7 @@ export class ActivityTypesService {
   constructor(
     @InjectRepository(ActivityTypeCatalog)
     private readonly repo: Repository<ActivityTypeCatalog>,
+    private readonly revalidation: RevalidationService,
   ) {}
 
   async create(dto: CreateActivityTypeDto) {
@@ -37,7 +41,9 @@ export class ActivityTypesService {
         active: dto.active ?? true,
         order: count + 1,
       });
-      return await this.repo.save(type);
+      const saved = await this.repo.save(type);
+      void this.revalidation.revalidate(TYPE_TAGS);
+      return saved;
     } catch (error) {
       this.handleExceptions(error);
     }
@@ -60,7 +66,9 @@ export class ActivityTypesService {
       const type = await this.findOne(id);
       const slug = dto.slug || (dto.name ? this.generateSlug(dto.name) : type.slug);
       const merged = this.repo.merge(type, { ...dto, slug });
-      return await this.repo.save(merged);
+      const saved = await this.repo.save(merged);
+      void this.revalidation.revalidate(TYPE_TAGS);
+      return saved;
     } catch (error) {
       this.handleExceptions(error);
     }
@@ -70,6 +78,7 @@ export class ActivityTypesService {
     try {
       const type = await this.findOne(id);
       await this.repo.remove(type);
+      void this.revalidation.revalidate(TYPE_TAGS);
       return { message: 'Tipo de actividad eliminado correctamente' };
     } catch (error) {
       this.handleExceptions(error);

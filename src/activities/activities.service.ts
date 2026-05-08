@@ -17,6 +17,9 @@ import {
   uploadImagesToFolder,
   uploadSingleImage,
 } from 'src/helpers/file-upload.helper';
+import { RevalidationService } from '../common/revalidation/revalidation.service';
+
+const ACTIVITY_TAGS = ['activities_public', 'activities_public_home'];
 
 @Injectable()
 export class ActivitiesService {
@@ -27,6 +30,7 @@ export class ActivitiesService {
     private readonly activityRepository: Repository<Activity>,
     @InjectRepository(ActivityImage)
     private readonly activityImageRepository: Repository<ActivityImage>,
+    private readonly revalidation: RevalidationService,
   ) {}
 
   private normalizeBoolean(value?: string | boolean, defaultValue = false) {
@@ -143,6 +147,7 @@ export class ActivitiesService {
       });
 
       const saved = await this.activityRepository.save(activity);
+      void this.revalidation.revalidate(ACTIVITY_TAGS);
       return this.mapActivity(saved);
     } catch (error) {
       this.handleExceptions(error);
@@ -283,6 +288,7 @@ export class ActivitiesService {
         : activity.type;
 
       const saved = await this.activityRepository.save(activity);
+      void this.revalidation.revalidate(ACTIVITY_TAGS);
       return this.mapActivity(saved);
     } catch (error) {
       this.handleExceptions(error);
@@ -296,6 +302,7 @@ export class ActivitiesService {
         throw new NotFoundException('Actividad no encontrada');
       }
       await this.activityRepository.remove(activity);
+      void this.revalidation.revalidate(ACTIVITY_TAGS);
       return { message: 'Actividad eliminada correctamente' };
     } catch (error) {
       this.handleExceptions(error);

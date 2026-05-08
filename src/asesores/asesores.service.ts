@@ -10,6 +10,9 @@ import { uploadSingleImage } from 'src/helpers/file-upload.helper';
 import { Asesor, TipoAsesor } from './entities/asesor.entity';
 import { CreateAsesorDto } from './dto/create-asesor.dto';
 import { UpdateAsesorDto } from './dto/update-asesor.dto';
+import { RevalidationService } from '../common/revalidation/revalidation.service';
+
+const ASESOR_TAGS = ['asesores_actuales'];
 
 @Injectable()
 export class AsesoresService {
@@ -18,6 +21,7 @@ export class AsesoresService {
   constructor(
     @InjectRepository(Asesor)
     private readonly repository: Repository<Asesor>,
+    private readonly revalidation: RevalidationService,
   ) {}
 
   private normalizeBoolean(value?: string | boolean, defaultValue = false) {
@@ -91,6 +95,7 @@ export class AsesoresService {
       });
 
       const saved = await this.repository.save(asesor);
+      void this.revalidation.revalidate(ASESOR_TAGS);
       return this.mapAsesor(saved);
     } catch (error) {
       this.handleExceptions(error);
@@ -162,6 +167,7 @@ export class AsesoresService {
       asesor.fechaFin = dto.fechaFin ?? asesor.fechaFin;
 
       const saved = await this.repository.save(asesor);
+      void this.revalidation.revalidate(ASESOR_TAGS);
       return this.mapAsesor(saved);
     } catch (error) {
       this.handleExceptions(error);
@@ -175,6 +181,7 @@ export class AsesoresService {
         throw new NotFoundException('Asesor no encontrado');
       }
       await this.repository.remove(asesor);
+      void this.revalidation.revalidate(ASESOR_TAGS);
       return { message: 'Asesor eliminado correctamente' };
     } catch (error) {
       this.handleExceptions(error);

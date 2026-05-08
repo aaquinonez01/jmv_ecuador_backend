@@ -30,7 +30,7 @@ import { HomeAnnouncementsModule } from './home_announcements/home-announcements
       password: process.env.DATABASE_PASSWORD ?? 'postgres',
       database: process.env.DATABASE_NAME ?? 'jmv',
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: process.env.NODE_ENV !== 'production',
     }),
     PostsModule,
     CommonModule,

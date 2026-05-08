@@ -17,6 +17,7 @@ import { CreateConsejoPeriodDto } from './dto/create-consejo-period.dto';
 import { UpdateConsejoPeriodDto } from './dto/update-consejo-period.dto';
 import { CreateConsejoMemberDto } from './dto/create-consejo-member.dto';
 import { UpdateConsejoMemberDto } from './dto/update-consejo-member.dto';
+import { RevalidationService } from '../common/revalidation/revalidation.service';
 
 const CARGOS_UNICOS: TipoCargoConsejo[] = [
   TipoCargoConsejo.COORDINADOR,
@@ -24,6 +25,8 @@ const CARGOS_UNICOS: TipoCargoConsejo[] = [
   TipoCargoConsejo.SECRETARIO,
   TipoCargoConsejo.TESORERO,
 ];
+
+const CONSEJO_TAGS = ['consejo_actual'];
 
 @Injectable()
 export class ConsejoNacionalService {
@@ -34,6 +37,7 @@ export class ConsejoNacionalService {
     private readonly periodRepository: Repository<ConsejoPeriod>,
     @InjectRepository(ConsejoMember)
     private readonly memberRepository: Repository<ConsejoMember>,
+    private readonly revalidation: RevalidationService,
   ) {}
 
   private normalizeBoolean(value?: string | boolean, defaultValue = false) {
@@ -105,6 +109,7 @@ export class ConsejoNacionalService {
       });
 
       const saved = await this.periodRepository.save(period);
+      void this.revalidation.revalidate(CONSEJO_TAGS);
       return this.mapPeriod({ ...saved, miembros: [] });
     } catch (error) {
       this.handleExceptions(error);
@@ -163,6 +168,7 @@ export class ConsejoNacionalService {
       period.descripcion = dto.descripcion ?? period.descripcion;
 
       const saved = await this.periodRepository.save(period);
+      void this.revalidation.revalidate(CONSEJO_TAGS);
       return this.findOnePeriod(saved.id);
     } catch (error) {
       this.handleExceptions(error);
@@ -176,6 +182,7 @@ export class ConsejoNacionalService {
         throw new NotFoundException('Período del Consejo no encontrado');
       }
       await this.periodRepository.remove(period);
+      void this.revalidation.revalidate(CONSEJO_TAGS);
       return { message: 'Período eliminado correctamente' };
     } catch (error) {
       this.handleExceptions(error);
@@ -236,6 +243,7 @@ export class ConsejoNacionalService {
       });
 
       const saved = await this.memberRepository.save(member);
+      void this.revalidation.revalidate(CONSEJO_TAGS);
       return this.mapMember(saved);
     } catch (error) {
       this.handleExceptions(error);
@@ -301,6 +309,7 @@ export class ConsejoNacionalService {
           : member.active;
 
       const saved = await this.memberRepository.save(member);
+      void this.revalidation.revalidate(CONSEJO_TAGS);
       return this.mapMember(saved);
     } catch (error) {
       this.handleExceptions(error);
@@ -314,6 +323,7 @@ export class ConsejoNacionalService {
         throw new NotFoundException('Miembro del Consejo no encontrado');
       }
       await this.memberRepository.remove(member);
+      void this.revalidation.revalidate(CONSEJO_TAGS);
       return { message: 'Miembro eliminado correctamente' };
     } catch (error) {
       this.handleExceptions(error);
