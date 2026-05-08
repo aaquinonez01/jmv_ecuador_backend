@@ -52,11 +52,12 @@ services:
       args:
         SKIP_REMOTE_FETCH: "1"
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.jmvecuador.org/api}
+        INTERNAL_API_URL: ${INTERNAL_API_URL:-http://backend:3002/api}
     container_name: jmv_frontend
     restart: always
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.jmvecuador.org/api}
-      INTERNAL_API_URL: http://backend:3002/api
+      INTERNAL_API_URL: ${INTERNAL_API_URL:-http://backend:3002/api}
       NODE_ENV: production
     depends_on:
       - backend
