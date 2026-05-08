@@ -15,12 +15,19 @@ async function bootstrap() {
   });
 
   app.setGlobalPrefix('api');
-  // CORS: permitir todos los orígenes y headers
+
+  // CORS: solo permitir tus dominios de producción
   app.enableCors({
-    origin: true,
+    origin: [
+      'https://jmvecuador.org',
+      'https://www.jmvecuador.org',
+      'http://localhost:3000', // para que sigas pudiendo probar en local
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: '*',
+    credentials: true,
   });
+
   app.useGlobalPipes(new ValidationPipe());
   await app.listen(process.env.PORT ?? 3002);
 }

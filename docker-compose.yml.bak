@@ -1,18 +1,4 @@
 services:
-  npm:
-    image: jc21/nginx-proxy-manager:latest
-    container_name: npm
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "81:81"
-    volumes:
-      - ./npm_data:/data
-      - ./npm_letsencrypt:/etc/letsencrypt
-    networks:
-      - web
-
   db:
     image: postgres:15
     restart: always
@@ -21,13 +7,10 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
       POSTGRES_DB: ${DATABASE_NAME}
     ports:
-      - "127.0.0.1:5437:5432"
+      - "5437:5432" # ← Cambia a 5437:5432 para que sea accesible externamente
     container_name: jmv_database
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
-    networks:
-      - web
-
   backend:
     build:
       context: .
@@ -42,27 +25,22 @@ services:
       DATABASE_PORT: 5432
     depends_on:
       - db
-    networks:
-      - web
-
+    ports:
+      - "3002:3002"
   frontend:
     build:
       context: ../jmv_ecuador_web
       dockerfile: Dockerfile
       args:
         SKIP_REMOTE_FETCH: "1"
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.jmvecuador.org/api}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://66.94.116.56:3002/api} # ← se inlinea en el bundle del navegador
     container_name: jmv_frontend
     restart: always
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.jmvecuador.org/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://66.94.116.56:3002/api}
       INTERNAL_API_URL: http://backend:3002/api
       NODE_ENV: production
     depends_on:
       - backend
-    networks:
-      - web
-
-networks:
-  web:
-    driver: bridge
+    ports:
+      - "3000:3000"
