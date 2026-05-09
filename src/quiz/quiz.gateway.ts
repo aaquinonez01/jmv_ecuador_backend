@@ -34,7 +34,12 @@ interface JwtPayload {
 @WebSocketGateway({
   namespace: 'quiz',
   cors: {
-    origin: true,
+    origin: [
+      'https://jmvecuador.org',
+      'https://www.jmvecuador.org',
+      'http://localhost:3000',
+    ],
+    credentials: true,
   },
 })
 export class QuizGateway

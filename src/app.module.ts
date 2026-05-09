@@ -31,6 +31,15 @@ import { HomeAnnouncementsModule } from './home_announcements/home-announcements
       database: process.env.DATABASE_NAME ?? 'jmv',
       autoLoadEntities: true,
       synchronize: process.env.NODE_ENV !== 'production',
+      logging: false,
+      extra: {
+        max: 30,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
+      },
+      cache: {
+        duration: 30000,
+      },
     }),
     PostsModule,
     CommonModule,
