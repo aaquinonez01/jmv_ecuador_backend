@@ -21,6 +21,15 @@ function toError(error: unknown): Error {
   if (typeof error === 'string') {
     return new Error(error);
   }
+  // Cloudinary devuelve los errores como objetos { message, http_code }
+  if (error && typeof error === 'object' && 'message' in error) {
+    const { message, http_code } = error as {
+      message: unknown;
+      http_code?: number;
+    };
+    const code = http_code ? ` (HTTP ${http_code})` : '';
+    return new Error(`Cloudinary: ${String(message)}${code}`);
+  }
   return new Error('Error desconocido al subir la imagen');
 }
 
