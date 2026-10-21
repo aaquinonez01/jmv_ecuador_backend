@@ -1,6 +1,13 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  Index,
+} from 'typeorm';
 import { Post } from './post.entity';
 
+@Index('idx_post_image_post', ['post'])
 @Entity()
 export class PostImage {
   @PrimaryGeneratedColumn('uuid')

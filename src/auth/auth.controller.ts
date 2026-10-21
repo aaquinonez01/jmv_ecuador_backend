@@ -7,9 +7,11 @@ import {
   Patch,
   UseInterceptors,
   UploadedFile,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { AuthService } from './auth.service';
+import { AuthService, toPublicUser } from './auth.service';
+import { RealIpThrottlerGuard } from 'src/common/guards/real-ip-throttler.guard';
 import { LoginUserDto } from './dto/login-user.dto';
 import { GetUser } from './decorators/get-user.decorator';
 import { User } from './entities/user';
@@ -23,6 +25,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @UseGuards(RealIpThrottlerGuard)
   @UseInterceptors(FileInterceptor('avatar', multerConfig))
   registerUser(
     @Body() registerUserDto: RegisterUserDto,
@@ -32,24 +35,23 @@ export class AuthController {
   }
 
   @Post('login')
+  @UseGuards(RealIpThrottlerGuard)
   loginUser(@Body() loginUserDto: LoginUserDto) {
-    console.log(loginUserDto);
     return this.authService.loginUser(loginUserDto);
   }
 
   @Get('me')
   @Auth(ValidRoles.ADMIN, ValidRoles.USER)
   me(@GetUser() user: User) {
-    return { user };
+    return { user: toPublicUser(user) };
   }
 
   @Get('test-token-protected')
   @Auth(ValidRoles.ADMIN)
   testTokenProtected(@GetUser() user: User) {
-    console.log(user);
     return {
       message: 'Token protegido',
-      user,
+      user: toPublicUser(user),
     };
   }
 

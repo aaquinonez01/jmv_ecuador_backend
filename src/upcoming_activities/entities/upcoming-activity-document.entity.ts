@@ -1,6 +1,13 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  Index,
+} from 'typeorm';
 import { UpcomingActivity } from './upcoming-activity.entity';
 
+@Index('idx_upcoming_activity_documents_activity', ['upcomingActivity'])
 @Entity('upcoming_activity_documents')
 export class UpcomingActivityDocument {
   @PrimaryGeneratedColumn('uuid')

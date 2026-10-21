@@ -26,13 +26,15 @@ export class TestimonialsService {
   ) {}
 
   private normalizeBoolean(value?: string | boolean, defaultValue = false) {
-    if (value === undefined || value === null || value === '') return defaultValue;
+    if (value === undefined || value === null || value === '')
+      return defaultValue;
     if (typeof value === 'boolean') return value;
     return ['true', '1', 'on'].includes(value.toLowerCase());
   }
 
   private normalizeNumber(value?: string | number, defaultValue = 0) {
-    if (value === undefined || value === null || value === '') return defaultValue;
+    if (value === undefined || value === null || value === '')
+      return defaultValue;
     if (typeof value === 'number') return value;
     const parsed = Number(value);
     return Number.isNaN(parsed) ? defaultValue : parsed;
@@ -82,12 +84,7 @@ export class TestimonialsService {
 
   async findAll(filterDto: FilterTestimonialsDto) {
     try {
-      const {
-        limit = '50',
-        offset = '0',
-        active,
-        search,
-      } = filterDto;
+      const { limit = 50, offset = 0, active, search } = filterDto;
 
       const qb = this.repository
         .createQueryBuilder('testimonial')
@@ -121,7 +118,11 @@ export class TestimonialsService {
   }
 
   async findPublic(filterDto: FilterTestimonialsDto) {
-    return this.findAll({ ...filterDto, active: 'true', limit: filterDto.limit || '6' });
+    return this.findAll({
+      ...filterDto,
+      active: 'true',
+      limit: filterDto.limit || 6,
+    });
   }
 
   async findOne(id: string) {

@@ -2,6 +2,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  OnApplicationBootstrap,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/auth/entities/user';
@@ -13,7 +14,7 @@ import { Subtype } from 'src/category_post/entities/subtype.entity';
 import { ActivityType } from 'src/category_post/entities/activity-type.entity';
 import * as bcrypt from 'bcrypt';
 @Injectable()
-export class SeedService {
+export class SeedService implements OnApplicationBootstrap {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
@@ -30,6 +31,54 @@ export class SeedService {
     private readonly activityTypeRepository: Repository<ActivityType>,
   ) {}
   private readonly logger = new Logger('SeedService');
+
+  async onApplicationBootstrap() {
+    try {
+      await this.ensureInitialAdmin();
+    } catch (error) {
+      // Nunca impedir el arranque (p. ej. si aún no existen las tablas)
+      this.logger.error(
+        `No se pudo crear el administrador inicial: ${(error as Error).message}`,
+      );
+    }
+  }
+
+  /**
+   * Crea el primer administrador si se definen ADMIN_EMAIL y ADMIN_PASSWORD en
+   * el .env y todavía no existe ningún admin. Sirve para arrancar con la base
+   * vacía; después se pueden quitar esas variables.
+   */
+  private async ensureInitialAdmin() {
+    const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+    const password = process.env.ADMIN_PASSWORD;
+    if (!email || !password) return;
+
+    if (password.length < 10) {
+      this.logger.warn(
+        'ADMIN_PASSWORD debe tener al menos 10 caracteres; no se creó el admin',
+      );
+      return;
+    }
+
+    const adminExists = await this.userRepository.exists({
+      where: { role: 'admin' },
+    });
+    if (adminExists) return;
+
+    const admin = this.userRepository.create({
+      email,
+      password: await bcrypt.hash(password, 10),
+      fullName: 'JMV Consejo Nacional Ecuador',
+      displayName: 'JMV Consejo Nacional Ecuador',
+      role: 'admin',
+      isActive: true,
+      phoneNumber: '',
+      address: 'Quito, Ecuador',
+      bio: '',
+    });
+    await this.userRepository.save(admin);
+    this.logger.log(`Administrador inicial creado: ${email}`);
+  }
 
   async executeSeed() {
     try {
@@ -59,10 +108,10 @@ export class SeedService {
     const users: User[] = [];
 
     try {
-      usersData.forEach((user) => {
-        user.password = bcrypt.hashSync(user.password, 10);
+      for (const user of usersData) {
+        user.password = await bcrypt.hash(user.password, 10);
         users.push(this.userRepository.create(user));
-      });
+      }
       await this.userRepository.save(users);
     } catch (error) {
       this.handleExceptions(error);

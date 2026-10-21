@@ -1,15 +1,24 @@
-import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { RevalidationService } from '../common/revalidation/revalidation.service';
 import { Repository } from 'typeorm';
 import { ActivityCategory } from './entities/activity-category.entity';
 import { CreateActivityCategoryDto } from './dto/create-activity-category.dto';
 import { UpdateActivityCategoryDto } from './dto/update-activity-category.dto';
+
+const CATEGORY_TAGS = ['activity_categories', 'galeria_actividades'];
 
 @Injectable()
 export class ActivityCategoriesService {
   constructor(
     @InjectRepository(ActivityCategory)
     private readonly repo: Repository<ActivityCategory>,
+    private readonly revalidation: RevalidationService,
   ) {}
 
   private readonly logger = new Logger('ActivityCategoriesService');
@@ -21,7 +30,9 @@ export class ActivityCategoriesService {
         throw new InternalServerErrorException('Slug ya existe');
       }
       const cat = this.repo.create({ ...dto, active: dto.active ?? true });
-      return await this.repo.save(cat);
+      const saved = await this.repo.save(cat);
+      void this.revalidation.revalidate(CATEGORY_TAGS);
+      return saved;
     } catch (error) {
       this.logger.error(error);
       throw new InternalServerErrorException('Error al crear categoría');
@@ -37,7 +48,9 @@ export class ActivityCategoriesService {
       const cat = await this.repo.findOne({ where: { id } });
       if (!cat) throw new NotFoundException('Categoría no encontrada');
       const merged = this.repo.merge(cat, dto);
-      return await this.repo.save(merged);
+      const saved = await this.repo.save(merged);
+      void this.revalidation.revalidate(CATEGORY_TAGS);
+      return saved;
     } catch (error) {
       this.logger.error(error);
       throw new InternalServerErrorException('Error al actualizar categoría');
@@ -49,6 +62,7 @@ export class ActivityCategoriesService {
       const cat = await this.repo.findOne({ where: { id } });
       if (!cat) throw new NotFoundException('Categoría no encontrada');
       await this.repo.remove(cat);
+      void this.revalidation.revalidate(CATEGORY_TAGS);
       return { message: 'Categoría eliminada' };
     } catch (error) {
       this.logger.error(error);
@@ -56,4 +70,3 @@ export class ActivityCategoriesService {
     }
   }
 }
-

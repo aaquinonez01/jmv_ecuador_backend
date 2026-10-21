@@ -5,7 +5,10 @@ import { memoryStorage } from 'multer';
 export const activityFilesMulterConfig: MulterOptions = {
   storage: memoryStorage(),
   limits: {
+    // Se mantiene 12 MB porque esta config también se usa para PDF/Office
     fileSize: 12 * 1024 * 1024,
+    // Portada + hasta 40 imágenes de galería por petición
+    files: 41,
   },
   fileFilter: (req, file, callback) => {
     const allowedMimeTypes = [

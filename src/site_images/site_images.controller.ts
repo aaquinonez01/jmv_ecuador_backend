@@ -26,7 +26,10 @@ export class SiteImagesController {
   constructor(private readonly service: SiteImagesService) {}
 
   @Get()
-  find(@Query('section') section: string, @Query('subsection') subsection?: string) {
+  find(
+    @Query('section') section: string,
+    @Query('subsection') subsection?: string,
+  ) {
     return this.service.find(section, subsection);
   }
 
@@ -41,6 +44,13 @@ export class SiteImagesController {
     return this.service.create(dto, file, user?.fullName);
   }
 
+  // Debe ir antes de ':id' o Express lo captura como id="reorder"
+  @Patch('reorder')
+  @Auth(ValidRoles.ADMIN)
+  reorder(@Body() dto: ReorderSiteImagesDto) {
+    return this.service.reorder(dto);
+  }
+
   @Patch(':id')
   @Auth(ValidRoles.ADMIN)
   update(@Param('id') id: string, @Body() dto: UpdateSiteImageDto) {
@@ -52,11 +62,4 @@ export class SiteImagesController {
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }
-
-  @Patch('reorder')
-  @Auth(ValidRoles.ADMIN)
-  reorder(@Body() dto: ReorderSiteImagesDto) {
-    return this.service.reorder(dto);
-  }
 }
-

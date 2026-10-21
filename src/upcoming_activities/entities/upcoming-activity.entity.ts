@@ -6,9 +6,17 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  Index,
 } from 'typeorm';
 import { UpcomingActivityDocument } from './upcoming-activity-document.entity';
 
+@Index('idx_upcoming_activities_pillar', ['pillar'])
+@Index('idx_upcoming_activities_type', ['type'])
+@Index('idx_upcoming_activities_published_order', [
+  'published',
+  'displayOrder',
+  'startDate',
+])
 @Entity('upcoming_activities')
 export class UpcomingActivity {
   @PrimaryGeneratedColumn('uuid')
@@ -89,9 +97,13 @@ export class UpcomingActivity {
   })
   type?: ActivityTypeCatalog;
 
-  @OneToMany(() => UpcomingActivityDocument, (document) => document.upcomingActivity, {
-    cascade: true,
-    eager: true,
-  })
+  @OneToMany(
+    () => UpcomingActivityDocument,
+    (document) => document.upcomingActivity,
+    {
+      cascade: true,
+      eager: true,
+    },
+  )
   documents?: UpcomingActivityDocument[];
 }

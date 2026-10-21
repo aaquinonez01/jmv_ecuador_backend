@@ -15,6 +15,16 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { uploadAvatar } from 'src/helpers/file-upload.helper';
+import { ValidRoles } from './interfaces/valid-roles.interface';
+
+export type PublicUser = Omit<User, 'password'>;
+
+export function toPublicUser(user: User): PublicUser {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { password: _, ...userWithoutPassword } = user;
+  return userWithoutPassword;
+}
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger('AuthService');
@@ -29,8 +39,15 @@ export class AuthService {
     avatar?: Express.Multer.File,
   ) {
     try {
-      const { password, comunidadId, ...userData } = registerUserDto;
-      const newPassword = bcrypt.hashSync(password, 10);
+      // role nunca se toma del cliente: todo registro público es USER
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const {
+        password,
+        comunidadId,
+        role: _role,
+        ...userData
+      } = registerUserDto;
+      const newPassword = await bcrypt.hash(password, 10);
 
       // Subir avatar si viene
       let profilePicture: string | null = null;
@@ -42,12 +59,13 @@ export class AuthService {
         ...userData,
         ...(comunidadId ? { comunidad: { id: comunidadId } } : {}),
         password: newPassword,
+        role: ValidRoles.USER,
+        isActive: true,
         ...(profilePicture ? { profilePicture } : {}),
       });
       await this.userRepository.save(newUser);
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password: _, ...userWithoutPassword } = newUser;
+      const userWithoutPassword = toPublicUser(newUser);
       const payload: JwtPayload = {
         email: userWithoutPassword.email,
         role: userWithoutPassword.role,
@@ -66,18 +84,14 @@ export class AuthService {
 
   async loginUser(loginUserDto: LoginUserDto) {
     const { email, password } = loginUserDto;
-    console.log(email, password);
     const user = await this.userRepository.findOne({ where: { email } });
-    console.log(user);
-    if (!user) {
-      console.log('El usuario no existe');
-      throw new BadRequestException('El usuario no existe');
+    // Mismo mensaje en ambos casos para no revelar qué correos existen
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      throw new BadRequestException('Credenciales inválidas');
     }
-    const isPasswordValid = bcrypt.compareSync(password, user.password);
-    if (!isPasswordValid) {
-      throw new BadRequestException('La contraseña es incorrecta');
+    if (!user.isActive) {
+      throw new BadRequestException('Usuario no activo');
     }
-    console.log(user);
     const payload: JwtPayload = {
       email: user.email,
       role: user.role,
@@ -86,7 +100,7 @@ export class AuthService {
     const token = this.getJwtToken(payload);
     return {
       message: 'Usuario logueado correctamente',
-      user,
+      user: toPublicUser(user),
       token,
     };
   }
@@ -97,7 +111,26 @@ export class AuthService {
     avatar?: Express.Multer.File,
   ) {
     try {
-      const { comunidadId, ...profileData } = updateProfileDto;
+      // Solo campos de perfil; role/isActive/password no se pueden cambiar aquí
+      const {
+        comunidadId,
+        fullName,
+        displayName,
+        birthDate,
+        phoneNumber,
+        address,
+        bio,
+      } = updateProfileDto;
+      const profileData = Object.fromEntries(
+        Object.entries({
+          fullName,
+          displayName,
+          birthDate,
+          phoneNumber,
+          address,
+          bio,
+        }).filter(([, value]) => value !== undefined),
+      );
       const user = await this.userRepository.preload({
         id: userId,
         ...profileData,
@@ -118,12 +151,9 @@ export class AuthService {
 
       await this.userRepository.save(user);
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password: _, ...userWithoutPassword } = user;
-
       return {
         message: 'Perfil actualizado correctamente',
-        user: userWithoutPassword,
+        user: toPublicUser(user),
       };
     } catch (error: unknown) {
       this.handleExceptions(error);
@@ -135,6 +165,7 @@ export class AuthService {
   }
 
   private handleExceptions(error: unknown): never {
+    if (error instanceof NotFoundException) throw error;
     this.logger.error(error);
     if (
       error &&
@@ -144,10 +175,6 @@ export class AuthService {
     ) {
       throw new BadRequestException('El usuario ya existe');
     }
-    console.log(error);
-    throw new InternalServerErrorException(
-      'Error al realizar la operación',
-      error instanceof Error ? error.message : 'Error desconocido',
-    );
+    throw new InternalServerErrorException('Error al realizar la operación');
   }
 }

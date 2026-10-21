@@ -6,8 +6,10 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  Index,
 } from 'typeorm';
 
+@Index('idx_user_comunidad', ['comunidad'])
 @Entity()
 export class User {
   @PrimaryGeneratedColumn('uuid')

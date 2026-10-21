@@ -12,7 +12,9 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "81:81"
+      # Panel de administración de NPM: solo accesible por túnel SSH
+      # (ssh -L 8181:localhost:81 root@<IP>  →  http://localhost:8181)
+      - "127.0.0.1:81:81"
     volumes:
       - ./npm_data:/data
       - ./npm_letsencrypt:/etc/letsencrypt
@@ -32,6 +34,21 @@ services:
     ports:
       - "127.0.0.1:5437:5432"
     container_name: jmv_database
+    # Ajustes para un VPS de 8 GB compartido con backend, frontend y proxy
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=512MB"
+      - "-c"
+      - "effective_cache_size=2GB"
+      - "-c"
+      - "work_mem=8MB"
+      - "-c"
+      - "maintenance_work_mem=128MB"
+      - "-c"
+      - "max_connections=50"
+      - "-c"
+      - "random_page_cost=1.1"
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
     networks:
@@ -41,7 +58,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
-    mem_limit: 3g
+    mem_limit: 2g
     cpus: 2.0
     shm_size: 256m
     logging: *default-logging
@@ -72,7 +89,7 @@ services:
       timeout: 3s
       retries: 5
       start_period: 20s
-    mem_limit: 1500m
+    mem_limit: 1g
     cpus: 1.5
     logging: *default-logging
 
@@ -81,24 +98,42 @@ services:
       context: ../jmv_ecuador_web
       dockerfile: Dockerfile
       args:
-        SKIP_REMOTE_FETCH: "1"
+        # En el build el contenedor no está en la red "web": se usa la API pública
+        # para prerenderizar las páginas con datos reales (si falla, se regeneran luego)
+        SKIP_REMOTE_FETCH: "0"
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.jmvecuador.org/api}
-        INTERNAL_API_URL: ${INTERNAL_API_URL:-http://backend:3002/api}
+        INTERNAL_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.jmvecuador.org/api}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://jmvecuador.org}
     container_name: jmv_frontend
     restart: always
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.jmvecuador.org/api}
       INTERNAL_API_URL: ${INTERNAL_API_URL:-http://backend:3002/api}
       REVALIDATE_TOKEN: ${REVALIDATE_TOKEN}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://jmvecuador.org}
       NODE_ENV: production
     depends_on:
       backend:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+    volumes:
+      # Imágenes ya optimizadas por next/image: se conservan entre despliegues
+      - next_image_cache:/app/.next/cache/images
     networks:
       - web
-    mem_limit: 1g
-    cpus: 1.0
+    mem_limit: 1536m
+    # El frontend atiende casi todo el tráfico público: puede usar los 2 núcleos
+    # (es un tope, no una reserva; se comparten con los demás servicios).
+    cpus: 2.0
     logging: *default-logging
+
+volumes:
+  next_image_cache:
 
 networks:
   web:

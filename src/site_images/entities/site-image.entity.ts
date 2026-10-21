@@ -4,8 +4,10 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 
+@Index('idx_site_image_section', ['section', 'subsection', 'orden'])
 @Entity()
 export class SiteImage {
   @PrimaryGeneratedColumn('uuid')

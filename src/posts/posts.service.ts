@@ -63,7 +63,14 @@ export class PostsService {
       const queryBuilder = this.postRepository
         .createQueryBuilder('post')
         .leftJoinAndSelect('post.images', 'images')
-        .leftJoinAndSelect('post.user', 'user')
+        // Solo los campos públicos del autor (nunca email ni hash)
+        .leftJoin('post.user', 'user')
+        .addSelect([
+          'user.id',
+          'user.fullName',
+          'user.profilePicture',
+          'user.role',
+        ])
         .leftJoinAndSelect('post.scope', 'scope')
         .leftJoinAndSelect('post.activityType', 'activityType')
         .leftJoinAndSelect('post.subtype', 'subtype');
@@ -103,7 +110,6 @@ export class PostsService {
       const [posts, total] = await queryBuilder.getManyAndCount();
 
       const page = Math.floor(offset / limit) + 1;
-      console.log('posts', posts);
       return {
         page,
         limit,
@@ -129,7 +135,6 @@ export class PostsService {
           user: {
             id: post.user.id,
             fullName: post.user.fullName,
-            email: post.user.email,
             profilePicture: post.user.profilePicture,
             role: post.user.role,
           },

@@ -17,6 +17,9 @@ import {
   uploadRawFilesToFolder,
   uploadSingleImage,
 } from 'src/helpers/file-upload.helper';
+import { RevalidationService } from '../common/revalidation/revalidation.service';
+
+const UPCOMING_TAGS = ['upcoming_home'];
 
 @Injectable()
 export class UpcomingActivitiesService {
@@ -27,16 +30,19 @@ export class UpcomingActivitiesService {
     private readonly upcomingRepository: Repository<UpcomingActivity>,
     @InjectRepository(UpcomingActivityDocument)
     private readonly documentRepository: Repository<UpcomingActivityDocument>,
+    private readonly revalidation: RevalidationService,
   ) {}
 
   private normalizeBoolean(value?: string | boolean, defaultValue = false) {
-    if (value === undefined || value === null || value === '') return defaultValue;
+    if (value === undefined || value === null || value === '')
+      return defaultValue;
     if (typeof value === 'boolean') return value;
     return ['true', '1', 'on'].includes(value.toLowerCase());
   }
 
   private normalizeNumber(value?: string | number, defaultValue = 0) {
-    if (value === undefined || value === null || value === '') return defaultValue;
+    if (value === undefined || value === null || value === '')
+      return defaultValue;
     if (typeof value === 'number') return value;
     const parsed = Number(value);
     return Number.isNaN(parsed) ? defaultValue : parsed;
@@ -99,14 +105,16 @@ export class UpcomingActivitiesService {
           }
         : null,
       documents:
-        activity.documents?.sort((a, b) => a.order - b.order).map((document) => ({
-          id: document.id,
-          name: document.name,
-          fileUrl: document.fileUrl,
-          fileType: document.fileType,
-          documentType: document.documentType,
-          order: document.order,
-        })) || [],
+        activity.documents
+          ?.sort((a, b) => a.order - b.order)
+          .map((document) => ({
+            id: document.id,
+            name: document.name,
+            fileUrl: document.fileUrl,
+            fileType: document.fileType,
+            documentType: document.documentType,
+            order: document.order,
+          })) || [],
     };
   }
 
@@ -161,7 +169,8 @@ export class UpcomingActivitiesService {
         type: this.relationById<ActivityTypeCatalog>(dto.typeId),
         documents: documentUrls.map((url, index) =>
           this.documentRepository.create({
-            name: documentFiles[index]?.originalname || `documento-${index + 1}`,
+            name:
+              documentFiles[index]?.originalname || `documento-${index + 1}`,
             fileUrl: url,
             fileType: documentFiles[index]?.mimetype,
             documentType: documentTypes[index],
@@ -171,6 +180,7 @@ export class UpcomingActivitiesService {
       });
 
       const saved = await this.upcomingRepository.save(activity);
+      void this.revalidation.revalidate(UPCOMING_TAGS);
       return this.mapUpcoming(saved);
     } catch (error) {
       this.handleExceptions(error);
@@ -288,7 +298,8 @@ export class UpcomingActivitiesService {
         activity.documents = documentUrls.map((url, index) =>
           this.documentRepository.create({
             name:
-              files.documents?.[index]?.originalname || `documento-${index + 1}`,
+              files.documents?.[index]?.originalname ||
+              `documento-${index + 1}`,
             fileUrl: url,
             fileType: files.documents?.[index]?.mimetype,
             documentType: documentTypes[index],
@@ -338,6 +349,7 @@ export class UpcomingActivitiesService {
         : activity.type;
 
       const saved = await this.upcomingRepository.save(activity);
+      void this.revalidation.revalidate(UPCOMING_TAGS);
       return this.mapUpcoming(saved);
     } catch (error) {
       this.handleExceptions(error);
@@ -351,6 +363,7 @@ export class UpcomingActivitiesService {
         throw new NotFoundException('Proxima actividad no encontrada');
       }
       await this.upcomingRepository.remove(activity);
+      void this.revalidation.revalidate(UPCOMING_TAGS);
       return { message: 'Proxima actividad eliminada correctamente' };
     } catch (error) {
       this.handleExceptions(error);

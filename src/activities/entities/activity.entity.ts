@@ -6,9 +6,17 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  Index,
 } from 'typeorm';
 import { ActivityImage } from './activity-image.entity';
 
+@Index('idx_activities_pillar', ['pillar'])
+@Index('idx_activities_type', ['type'])
+@Index('idx_activities_published_order', [
+  'published',
+  'displayOrder',
+  'startDate',
+])
 @Entity('activities')
 export class Activity {
   @PrimaryGeneratedColumn('uuid')

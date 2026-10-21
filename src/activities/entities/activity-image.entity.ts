@@ -1,6 +1,13 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  Index,
+} from 'typeorm';
 import { Activity } from './activity.entity';
 
+@Index('idx_activity_images_activity', ['activity'])
 @Entity('activity_images')
 export class ActivityImage {
   @PrimaryGeneratedColumn('uuid')

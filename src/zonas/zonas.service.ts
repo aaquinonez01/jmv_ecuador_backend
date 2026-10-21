@@ -5,16 +5,20 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { RevalidationService } from '../common/revalidation/revalidation.service';
 import { Repository } from 'typeorm';
 import { Zona } from './entities/zona.entity';
 import { CreateZonaDto } from './dto/create-zona.dto';
 import { UpdateZonaDto } from './dto/update-zona.dto';
+
+const TERRITORIO_TAGS = ['zonas', 'comunidades'];
 
 @Injectable()
 export class ZonasService {
   constructor(
     @InjectRepository(Zona)
     private readonly zonaRepository: Repository<Zona>,
+    private readonly revalidation: RevalidationService,
   ) {}
 
   private readonly logger = new Logger('ZonasService');
@@ -22,7 +26,9 @@ export class ZonasService {
   async create(createZonaDto: CreateZonaDto) {
     try {
       const zona = this.zonaRepository.create(createZonaDto);
-      return await this.zonaRepository.save(zona);
+      const saved = await this.zonaRepository.save(zona);
+      void this.revalidation.revalidate(TERRITORIO_TAGS);
+      return saved;
     } catch (error) {
       this.handleExceptions(error);
     }
@@ -59,7 +65,9 @@ export class ZonasService {
         throw new NotFoundException('Zona no encontrada');
       }
 
-      return await this.zonaRepository.save(zona);
+      const saved = await this.zonaRepository.save(zona);
+      void this.revalidation.revalidate(TERRITORIO_TAGS);
+      return saved;
     } catch (error) {
       this.handleExceptions(error);
     }
@@ -73,6 +81,7 @@ export class ZonasService {
       }
 
       await this.zonaRepository.remove(zona);
+      void this.revalidation.revalidate(TERRITORIO_TAGS);
       return { message: 'Zona eliminada correctamente' };
     } catch (error) {
       this.handleExceptions(error);
@@ -89,4 +98,3 @@ export class ZonasService {
     throw new InternalServerErrorException('Error al realizar la operación');
   }
 }
-

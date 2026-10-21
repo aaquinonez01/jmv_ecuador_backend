@@ -12,7 +12,7 @@ import { CreateActivityPillarDto } from './dto/create-activity-pillar.dto';
 import { UpdateActivityPillarDto } from './dto/update-activity-pillar.dto';
 import { RevalidationService } from '../common/revalidation/revalidation.service';
 
-const PILLAR_TAGS = ['activity_pillars_public'];
+const PILLAR_TAGS = ['activity_pillars_public', 'activities_public'];
 
 @Injectable()
 export class ActivityPillarsService {

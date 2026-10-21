@@ -12,7 +12,7 @@ import { CreateActivityTypeDto } from './dto/create-activity-type.dto';
 import { UpdateActivityTypeDto } from './dto/update-activity-type.dto';
 import { RevalidationService } from '../common/revalidation/revalidation.service';
 
-const TYPE_TAGS = ['activity_types_public'];
+const TYPE_TAGS = ['activity_types_public', 'activities_public'];
 
 @Injectable()
 export class ActivityTypesService {
@@ -31,7 +31,9 @@ export class ActivityTypesService {
         where: [{ slug }, { name: dto.name }],
       });
       if (exists) {
-        throw new ConflictException('Ya existe un tipo de actividad con ese nombre o slug');
+        throw new ConflictException(
+          'Ya existe un tipo de actividad con ese nombre o slug',
+        );
       }
 
       const count = await this.repo.count();
@@ -64,7 +66,8 @@ export class ActivityTypesService {
   async update(id: string, dto: UpdateActivityTypeDto) {
     try {
       const type = await this.findOne(id);
-      const slug = dto.slug || (dto.name ? this.generateSlug(dto.name) : type.slug);
+      const slug =
+        dto.slug || (dto.name ? this.generateSlug(dto.name) : type.slug);
       const merged = this.repo.merge(type, { ...dto, slug });
       const saved = await this.repo.save(merged);
       void this.revalidation.revalidate(TYPE_TAGS);
@@ -98,7 +101,10 @@ export class ActivityTypesService {
 
   private handleExceptions(error: unknown): never {
     this.logger.error(error);
-    if (error instanceof ConflictException || error instanceof NotFoundException) {
+    if (
+      error instanceof ConflictException ||
+      error instanceof NotFoundException
+    ) {
       throw error;
     }
     throw new InternalServerErrorException(

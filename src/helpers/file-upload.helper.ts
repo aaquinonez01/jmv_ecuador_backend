@@ -8,6 +8,12 @@ function bufferToStream(buffer: Buffer) {
   return readable;
 }
 
+// Transformación entrante: Cloudinary guarda el original reducido a máx. 2000px
+// y recomprimido, así no se sirven fotos de cámara de 5-10 MB.
+const IMAGE_INCOMING_TRANSFORMATION = [
+  { width: 2000, height: 2000, crop: 'limit', quality: 'auto:good' },
+];
+
 function toError(error: unknown): Error {
   if (error instanceof Error) {
     return error;
@@ -29,7 +35,10 @@ export async function uploadImages(
     (file) =>
       new Promise<string>((resolve, reject) => {
         const upload = cloudinary.uploader.upload_stream(
-          { folder: 'jmv_ecuador/posts/images' },
+          {
+            folder: 'jmv_ecuador/posts/images',
+            transformation: IMAGE_INCOMING_TRANSFORMATION,
+          },
           (err, result) => {
             if (err) {
               reject(toError(err));
@@ -57,7 +66,7 @@ export async function uploadSingleImage(
 
   return new Promise<string>((resolve, reject) => {
     const upload = cloudinary.uploader.upload_stream(
-      { folder },
+      { folder, transformation: IMAGE_INCOMING_TRANSFORMATION },
       (err, result) => {
         if (err) {
           reject(toError(err));

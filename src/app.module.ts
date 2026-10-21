@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { PostsModule } from './posts/posts.module';
 import { CommonModule } from './common/common.module';
 import { CategoryPostModule } from './category_post/category_post.module';
@@ -22,6 +23,8 @@ import { HomeAnnouncementsModule } from './home_announcements/home-announcements
 @Module({
   imports: [
     ConfigModule.forRoot(),
+    // Solo se aplica en las rutas con ThrottlerGuard (login/registro)
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 10 }]),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DATABASE_HOST ?? 'localhost',
@@ -30,15 +33,17 @@ import { HomeAnnouncementsModule } from './home_announcements/home-announcements
       password: process.env.DATABASE_PASSWORD ?? 'postgres',
       database: process.env.DATABASE_NAME ?? 'jmv',
       autoLoadEntities: true,
-      synchronize: process.env.NODE_ENV !== 'production',
-      logging: false,
+      // En producción solo con DB_SYNCHRONIZE=true (p. ej. el primer arranque
+      // con la base vacía, para crear las tablas). Luego volver a false.
+      synchronize:
+        process.env.NODE_ENV !== 'production' ||
+        process.env.DB_SYNCHRONIZE === 'true',
+      logging: ['error', 'warn'],
+      maxQueryExecutionTime: 1000,
       extra: {
-        max: 30,
+        max: 15,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 5000,
-      },
-      cache: {
-        duration: 30000,
       },
     }),
     PostsModule,

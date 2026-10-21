@@ -4,6 +4,7 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  Index,
 } from 'typeorm';
 import { PostImage } from './post-image.entity';
 import { Scope } from 'src/category_post/entities/scope.entity';
@@ -11,6 +12,11 @@ import { Subtype } from 'src/category_post/entities/subtype.entity';
 import { ActivityType } from 'src/category_post/entities/activity-type.entity';
 import { User } from 'src/auth/entities/user';
 
+@Index('idx_post_user', ['user'])
+@Index('idx_post_scope', ['scope'])
+@Index('idx_post_activity_type', ['activityType'])
+@Index('idx_post_subtype', ['subtype'])
+@Index('idx_post_created_at', ['createdAt'])
 @Entity()
 export class Post {
   @PrimaryGeneratedColumn('uuid')

@@ -1,4 +1,10 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  Index,
+} from 'typeorm';
 import { ConsejoPeriod } from './consejo-period.entity';
 
 export enum TipoCargoConsejo {
@@ -9,6 +15,7 @@ export enum TipoCargoConsejo {
   VOCAL = 'vocal',
 }
 
+@Index('idx_consejo_members_period', ['period'])
 @Entity('consejo_members')
 export class ConsejoMember {
   @PrimaryGeneratedColumn('uuid')

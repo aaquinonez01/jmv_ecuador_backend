@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { RevalidationService } from '../common/revalidation/revalidation.service';
 import { Repository } from 'typeorm';
 import { SiteImage } from './entities/site-image.entity';
 import { CreateSiteImageDto } from './dto/create-site-image.dto';
@@ -12,11 +13,14 @@ import { UpdateSiteImageDto } from './dto/update-site-image.dto';
 import { ReorderSiteImagesDto } from './dto/reorder-site-images.dto';
 import { uploadSingleImage } from 'src/helpers/file-upload.helper';
 
+const SITE_IMAGE_TAGS = ['galeria_actividades', 'site_images'];
+
 @Injectable()
 export class SiteImagesService {
   constructor(
     @InjectRepository(SiteImage)
     private readonly repo: Repository<SiteImage>,
+    private readonly revalidation: RevalidationService,
   ) {}
 
   private readonly logger = new Logger('SiteImagesService');
@@ -82,7 +86,9 @@ export class SiteImagesService {
       }
       const count = await countQb.getCount();
       image.orden = count + 1;
-      return this.repo.save(image);
+      const saved = await this.repo.save(image);
+      void this.revalidation.revalidate(SITE_IMAGE_TAGS);
+      return saved;
     } catch (error) {
       this.logger.error(error);
       throw new InternalServerErrorException('Error al crear imagen');
@@ -107,6 +113,7 @@ export class SiteImagesService {
         personData: dto.personData ?? img.personData,
       });
       await this.repo.save(updated);
+      void this.revalidation.revalidate(SITE_IMAGE_TAGS);
       return updated;
     } catch (error) {
       this.logger.error(error);
@@ -121,6 +128,7 @@ export class SiteImagesService {
         throw new NotFoundException('Imagen no encontrada');
       }
       await this.repo.remove(img);
+      void this.revalidation.revalidate(SITE_IMAGE_TAGS);
       return { message: 'Imagen eliminada' };
     } catch (error) {
       this.logger.error(error);
@@ -137,6 +145,7 @@ export class SiteImagesService {
         if (item) item.orden = idx + 1;
       });
       await this.repo.save([...byId.values()]);
+      void this.revalidation.revalidate(SITE_IMAGE_TAGS);
       return { message: 'Orden actualizado' };
     } catch (error) {
       this.logger.error(error);

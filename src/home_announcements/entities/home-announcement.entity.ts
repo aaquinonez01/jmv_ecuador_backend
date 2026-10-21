@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, Index } from 'typeorm';
 
 export enum TipoAnnouncement {
   NUEVO_CONSEJO = 'nuevo_consejo',
@@ -7,6 +7,7 @@ export enum TipoAnnouncement {
   GENERAL = 'general',
 }
 
+@Index('idx_home_announcements_active_featured', ['active', 'featuredInHome'])
 @Entity('home_announcements')
 export class HomeAnnouncement {
   @PrimaryGeneratedColumn('uuid')

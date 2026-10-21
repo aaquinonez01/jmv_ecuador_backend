@@ -5,11 +5,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { RevalidationService } from '../common/revalidation/revalidation.service';
 import { Repository } from 'typeorm';
 import { Comunidad } from './entities/comunidad.entity';
 import { Zona } from 'src/zonas/entities/zona.entity';
 import { CreateComunidadDto } from './dto/create-comunidad.dto';
 import { UpdateComunidadDto } from './dto/update-comunidad.dto';
+
+const TERRITORIO_TAGS = ['zonas', 'comunidades'];
 
 @Injectable()
 export class ComunidadesService {
@@ -18,6 +21,7 @@ export class ComunidadesService {
     private readonly comunidadRepository: Repository<Comunidad>,
     @InjectRepository(Zona)
     private readonly zonaRepository: Repository<Zona>,
+    private readonly revalidation: RevalidationService,
   ) {}
 
   private readonly logger = new Logger('ComunidadesService');
@@ -43,7 +47,9 @@ export class ComunidadesService {
         zona,
       });
 
-      return await this.comunidadRepository.save(comunidad);
+      const saved = await this.comunidadRepository.save(comunidad);
+      void this.revalidation.revalidate(TERRITORIO_TAGS);
+      return saved;
     } catch (error) {
       this.handleExceptions(error);
     }
@@ -120,7 +126,9 @@ export class ComunidadesService {
         comunidad.longitud = updateComunidadDto.longitud ?? null;
       }
 
-      return await this.comunidadRepository.save(comunidad);
+      const saved = await this.comunidadRepository.save(comunidad);
+      void this.revalidation.revalidate(TERRITORIO_TAGS);
+      return saved;
     } catch (error) {
       this.handleExceptions(error);
     }
@@ -128,12 +136,15 @@ export class ComunidadesService {
 
   async remove(id: string) {
     try {
-      const comunidad = await this.comunidadRepository.findOne({ where: { id } });
+      const comunidad = await this.comunidadRepository.findOne({
+        where: { id },
+      });
       if (!comunidad) {
         throw new NotFoundException('Comunidad no encontrada');
       }
 
       await this.comunidadRepository.remove(comunidad);
+      void this.revalidation.revalidate(TERRITORIO_TAGS);
       return { message: 'Comunidad eliminada correctamente' };
     } catch (error) {
       this.handleExceptions(error);
@@ -150,4 +161,3 @@ export class ComunidadesService {
     throw new InternalServerErrorException('Error al realizar la operación');
   }
 }
-
