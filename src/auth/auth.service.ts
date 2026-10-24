@@ -28,11 +28,11 @@ const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 const hashResetToken = (token: string) =>
   createHash('sha256').update(token).digest('hex');
 
-export type PublicUser = Omit<User, 'password'>;
+export type PublicUser = Omit<User, 'password' | 'passwordChangedAt'>;
 
 export function toPublicUser(user: User): PublicUser {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { password: _, ...userWithoutPassword } = user;
+  const { password: _, passwordChangedAt: __, ...userWithoutPassword } = user;
   return userWithoutPassword;
 }
 
@@ -100,7 +100,7 @@ export class AuthService {
 
   async loginUser(loginUserDto: LoginUserDto) {
     const { email, password } = loginUserDto;
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.findUserByEmail(email);
     // Mismo mensaje en ambos casos para no revelar qué correos existen
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new BadRequestException('Credenciales inválidas');
@@ -184,15 +184,7 @@ export class AuthService {
     };
 
     try {
-      let user = await this.userRepository.findOne({ where: { email } });
-      if (!user) {
-        const matches = await this.userRepository
-          .createQueryBuilder('user')
-          .where('LOWER(user.email) = LOWER(:email)', { email })
-          .take(2)
-          .getMany();
-        user = matches.length === 1 ? matches[0] : null;
-      }
+      const user = await this.findUserByEmail(email);
       if (!user || !user.isActive) return response;
 
       // Un solo enlace vigente por usuario: los anteriores dejan de servir
@@ -244,7 +236,12 @@ export class AuthService {
       );
       if (!result.affected) throw invalid;
 
-      await manager.update(User, { id: userId }, { password: newPassword });
+      // passwordChangedAt invalida los JWT emitidos antes del cambio
+      await manager.update(
+        User,
+        { id: userId },
+        { password: newPassword, passwordChangedAt: new Date() },
+      );
       await manager.delete(PasswordResetToken, {
         userId,
         usedAt: IsNull(),
@@ -293,6 +290,22 @@ export class AuthService {
         </div>
       `,
     });
+  }
+
+  /**
+   * Busca por el correo exacto y, si no hay, sin distinguir mayúsculas
+   * (solo si la coincidencia es única), igual en el login y en la recuperación.
+   */
+  private async findUserByEmail(email: string): Promise<User | null> {
+    const exact = await this.userRepository.findOne({ where: { email } });
+    if (exact) return exact;
+    const matches = await this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.comunidad', 'comunidad')
+      .where('LOWER(user.email) = LOWER(:email)', { email: email.trim() })
+      .take(2)
+      .getMany();
+    return matches.length === 1 ? matches[0] : null;
   }
 
   private getJwtToken(payload: JwtPayload) {

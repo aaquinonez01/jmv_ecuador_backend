@@ -54,4 +54,7 @@ BEGIN
   END IF;
 END $$;
 
+-- Momento del último cambio de contraseña: invalida los JWT emitidos antes
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "passwordChangedAt" TIMESTAMP;
+
 COMMIT;
