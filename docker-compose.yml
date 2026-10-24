@@ -110,6 +110,8 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.jmvecuador.org/api}
       INTERNAL_API_URL: ${INTERNAL_API_URL:-http://backend:3002/api}
       REVALIDATE_TOKEN: ${REVALIDATE_TOKEN}
+      # IP del visitante firmada para el límite del formulario de contacto
+      INTERNAL_PROXY_KEY: ${INTERNAL_PROXY_KEY:-}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://jmvecuador.org}
       NODE_ENV: production
     depends_on:
