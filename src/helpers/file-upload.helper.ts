@@ -150,3 +150,31 @@ export async function uploadAvatar(
 ): Promise<string | null> {
   return uploadSingleImage(file, 'jmv_ecuador/users/avatars');
 }
+
+// Igual que uploadSingleImage, pero devuelve también el public_id para poder
+// borrar la imagen de Cloudinary cuando se reemplaza o se quita.
+export async function uploadImageWithPublicId(
+  file: Express.Multer.File,
+  folder: string,
+): Promise<{ url: string; publicId: string }> {
+  return new Promise((resolve, reject) => {
+    const upload = cloudinary.uploader.upload_stream(
+      { folder, transformation: IMAGE_INCOMING_TRANSFORMATION },
+      (err, result) => {
+        if (err) {
+          reject(toError(err));
+        } else if (!result) {
+          reject(new Error('Error al subir la imagen: resultado vacío'));
+        } else {
+          resolve({ url: result.secure_url, publicId: result.public_id });
+        }
+      },
+    );
+    bufferToStream(file.buffer).pipe(upload);
+  });
+}
+
+export async function deleteImageByPublicId(publicId?: string | null) {
+  if (!publicId) return;
+  await cloudinary.uploader.destroy(publicId, { invalidate: true });
+}
