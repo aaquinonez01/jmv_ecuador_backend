@@ -61,6 +61,10 @@ export class User {
   @Column('bool', { default: true })
   isActive: boolean;
 
+  // Los JWT emitidos antes de este momento dejan de valer (p. ej. tras restablecer la contraseña)
+  @Column({ type: 'timestamp', nullable: true })
+  passwordChangedAt?: Date | null;
+
   @Column('date', { nullable: true })
   birthDate: Date;
 

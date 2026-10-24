@@ -7,6 +7,8 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { PasswordResetToken } from './entities/password-reset-token.entity';
+import { MailModule } from '../mail/mail.module';
 
 const DEFAULT_JWT_EXPIRES_IN_SECONDS = 2 * 60 * 60;
 
@@ -49,7 +51,8 @@ function parseJwtExpiresInToSeconds(value: unknown): number {
   providers: [AuthService, JwtStrategy],
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, PasswordResetToken]),
+    MailModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

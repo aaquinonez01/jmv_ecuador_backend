@@ -8,8 +8,13 @@ import {
   UseInterceptors,
   UploadedFile,
   UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthService, toPublicUser } from './auth.service';
 import { RealIpThrottlerGuard } from 'src/common/guards/real-ip-throttler.guard';
 import { LoginUserDto } from './dto/login-user.dto';
@@ -38,6 +43,23 @@ export class AuthController {
   @UseGuards(RealIpThrottlerGuard)
   loginUser(@Body() loginUserDto: LoginUserDto) {
     return this.authService.loginUser(loginUserDto);
+  }
+
+  // 5 solicitudes cada 15 minutos por IP
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RealIpThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 15 * 60_000 } })
+  forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RealIpThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 15 * 60_000 } })
+  resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(resetPasswordDto);
   }
 
   @Get('me')

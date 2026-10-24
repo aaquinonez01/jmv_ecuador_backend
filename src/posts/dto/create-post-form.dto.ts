@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
 
 /**
  * DTO para crear un post cuando se envían imágenes como archivos
@@ -25,4 +31,9 @@ export class CreatePostFormDto {
   @IsOptional()
   @IsString()
   subtype?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['moments', 'documents'])
+  typePost?: string;
 }

@@ -60,20 +60,7 @@ export class PostsService {
         search,
       } = filterDto;
       // Construir query dinámicamente con filtros
-      const queryBuilder = this.postRepository
-        .createQueryBuilder('post')
-        .leftJoinAndSelect('post.images', 'images')
-        // Solo los campos públicos del autor (nunca email ni hash)
-        .leftJoin('post.user', 'user')
-        .addSelect([
-          'user.id',
-          'user.fullName',
-          'user.profilePicture',
-          'user.role',
-        ])
-        .leftJoinAndSelect('post.scope', 'scope')
-        .leftJoinAndSelect('post.activityType', 'activityType')
-        .leftJoinAndSelect('post.subtype', 'subtype');
+      const queryBuilder = this.publicPostQuery();
 
       // Aplicar filtros si existen
       if (scope) {
@@ -115,49 +102,72 @@ export class PostsService {
         limit,
         offset,
         total,
-        posts: posts.map((post) => ({
-          id: post.id,
-          title: post.title,
-          content: post.content,
-          typePost: post.typePost,
-          createdAt: post.createdAt,
-          updatedAt: post.updatedAt,
-          images: post.images?.map((image) => image.url) || [],
-          scope: post.scope
-            ? { id: post.scope.id, name: post.scope.name }
-            : null,
-          activityType: post.activityType
-            ? { id: post.activityType.id, name: post.activityType.name }
-            : null,
-          subtype: post.subtype
-            ? { id: post.subtype.id, name: post.subtype.name }
-            : null,
-          user: {
-            id: post.user.id,
-            fullName: post.user.fullName,
-            profilePicture: post.user.profilePicture,
-            role: post.user.role,
-          },
-        })),
+        posts: posts.map((post) => this.toPublicPost(post)),
       };
     } catch (error) {
       this.handleExceptions(error);
     }
   }
 
+  /** Misma forma que cada elemento de findAll (la usa la página /blog/[id]) */
   async findOne(id: string) {
     try {
-      const post = await this.postRepository.findOneBy({ id });
+      const post = await this.publicPostQuery()
+        .where('post.id = :id', { id })
+        .getOne();
       if (!post) {
         throw new NotFoundException('No se encontro el post especificado');
       }
-      return {
-        ...post,
-        images: post.images?.map((image) => image.url),
-      };
+      return this.toPublicPost(post);
     } catch (error) {
       this.handleExceptions(error);
     }
+  }
+
+  private publicPostQuery() {
+    return (
+      this.postRepository
+        .createQueryBuilder('post')
+        .leftJoinAndSelect('post.images', 'images')
+        // Solo los campos públicos del autor (nunca email ni hash)
+        .leftJoin('post.user', 'user')
+        .addSelect([
+          'user.id',
+          'user.fullName',
+          'user.profilePicture',
+          'user.role',
+        ])
+        .leftJoinAndSelect('post.scope', 'scope')
+        .leftJoinAndSelect('post.activityType', 'activityType')
+        .leftJoinAndSelect('post.subtype', 'subtype')
+    );
+  }
+
+  private toPublicPost(post: Post) {
+    return {
+      id: post.id,
+      title: post.title,
+      content: post.content,
+      typePost: post.typePost,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      images: post.images?.map((image) => image.url) || [],
+      scope: post.scope ? { id: post.scope.id, name: post.scope.name } : null,
+      activityType: post.activityType
+        ? { id: post.activityType.id, name: post.activityType.name }
+        : null,
+      subtype: post.subtype
+        ? { id: post.subtype.id, name: post.subtype.name }
+        : null,
+      user: post.user
+        ? {
+            id: post.user.id,
+            fullName: post.user.fullName,
+            profilePicture: post.user.profilePicture,
+            role: post.user.role,
+          }
+        : null,
+    };
   }
 
   async update(id: string, updatePostDto: UpdatePostDto) {
@@ -202,16 +212,19 @@ export class PostsService {
 
   async remove(id: string, user: User) {
     try {
-      const post = await this.findOne(id);
+      const post = await this.postRepository.findOne({
+        where: { id },
+        relations: { user: true },
+      });
       if (!post) {
         throw new NotFoundException('No se encontro el post especificado');
       }
-      if (post.user.id !== user.id) {
+      if (post.user?.id !== user.id) {
         throw new ForbiddenException(
           'No tienes permisos para eliminar este post',
         );
       }
-      await this.postRepository.remove(post as Post);
+      await this.postRepository.remove(post);
       return { message: 'Post eliminado correctamente' };
     } catch (error) {
       this.handleExceptions(error);
@@ -219,6 +232,13 @@ export class PostsService {
   }
 
   private handleExceptions(error: any) {
+    // 404 y 403 llegan tal cual al cliente (antes se convertían en 500)
+    if (
+      error instanceof NotFoundException ||
+      error instanceof ForbiddenException
+    ) {
+      throw error;
+    }
     this.logger.error(error);
     throw new InternalServerErrorException('Error al realizar la operación');
   }

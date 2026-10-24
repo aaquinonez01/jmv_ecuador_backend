@@ -19,11 +19,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
   async validate(payload: JwtPayload): Promise<User> {
-    const { email } = payload;
+    const { email, iat } = payload;
 
     const user = await this.userRepository.findOneBy({ email });
     if (!user) {
       throw new UnauthorizedException('Token no válido');
+    }
+    // Sesiones abiertas antes de cambiar la contraseña
+    if (
+      user.passwordChangedAt &&
+      (!iat || iat < Math.floor(user.passwordChangedAt.getTime() / 1000))
+    ) {
+      throw new UnauthorizedException(
+        'Tu sesión expiró. Vuelve a iniciar sesión.',
+      );
     }
     if (!user.isActive) {
       throw new UnauthorizedException('Usuario no activo');

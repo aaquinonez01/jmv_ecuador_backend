@@ -20,11 +20,17 @@ import { QuizModule } from './quiz/quiz.module';
 import { ConsejoNacionalModule } from './consejo_nacional/consejo-nacional.module';
 import { AsesoresModule } from './asesores/asesores.module';
 import { HomeAnnouncementsModule } from './home_announcements/home-announcements.module';
+import { ContactMessagesModule } from './contact_messages/contact-messages.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
-    // Solo se aplica en las rutas con ThrottlerGuard (login/registro)
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 10 }]),
+    // Solo se aplica en las rutas con RealIpThrottlerGuard (login, registro,
+    // contacto y recuperación de contraseña)
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60_000, limit: 10 }],
+      errorMessage:
+        'Hiciste demasiados intentos seguidos. Espera unos minutos y vuelve a intentarlo.',
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DATABASE_HOST ?? 'localhost',
@@ -64,6 +70,7 @@ import { HomeAnnouncementsModule } from './home_announcements/home-announcements
     ConsejoNacionalModule,
     AsesoresModule,
     HomeAnnouncementsModule,
+    ContactMessagesModule,
   ],
   controllers: [],
   providers: [],
