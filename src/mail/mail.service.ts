@@ -30,11 +30,13 @@ export class MailService {
   private readonly from: string;
 
   constructor(private readonly config: ConfigService) {
-    const host = this.config.get<string>('SMTP_HOST');
-    const user = this.config.get<string>('SMTP_USER');
+    // Las variables definidas pero vacías (MAIL_FROM= en .env) cuentan como ausentes
+    const env = (key: string) =>
+      this.config.get<string>(key)?.trim() || undefined;
+    const host = env('SMTP_HOST');
+    const user = env('SMTP_USER');
     const pass = this.config.get<string>('SMTP_PASS');
-    this.from =
-      this.config.get<string>('MAIL_FROM') ?? user ?? 'no-reply@jmvecuador.org';
+    this.from = env('MAIL_FROM') || user || 'no-reply@jmvecuador.org';
 
     if (!host) {
       this.transporter = null;
@@ -44,10 +46,9 @@ export class MailService {
       return;
     }
 
-    const port = parseInt(this.config.get<string>('SMTP_PORT') ?? '587');
-    const secure =
-      (this.config.get<string>('SMTP_SECURE') ?? String(port === 465)) ===
-      'true';
+    const parsedPort = parseInt(env('SMTP_PORT') ?? '', 10);
+    const port = Number.isNaN(parsedPort) ? 587 : parsedPort;
+    const secure = (env('SMTP_SECURE') ?? String(port === 465)) === 'true';
 
     this.transporter = createTransport({
       host,
