@@ -136,7 +136,7 @@ export class CalendarDatesService implements OnApplicationBootstrap {
   }
 
   private revalidate(...slugs: string[]) {
-    const paths = ['/calendario', '/'];
+    const paths = ['/calendario', '/calendario/feed.ics', '/'];
     for (const slug of new Set(slugs)) paths.push(`/calendario/${slug}`);
     void this.revalidation.revalidate(CALENDAR_TAGS, paths);
   }
