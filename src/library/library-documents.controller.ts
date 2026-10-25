@@ -87,6 +87,7 @@ export class LibraryDocumentsController {
   async file(
     @Param('id', ParseUUIDPipe) id: string,
     @Query('download') download: string | undefined,
+    @Query('v') version: string | undefined,
     @Headers('authorization') authorization: string | undefined,
     @Headers('range') range: string | undefined,
     @Res() res: Response,
@@ -110,11 +111,14 @@ export class LibraryDocumentsController {
           headers: {
             'Content-Type': 'application/pdf',
             'Content-Disposition': `${asAttachment ? 'attachment' : 'inline'}; filename="${fileName}"`,
-            // Siempre revalida con el ETag (304): si el admin lo pasa a
-            // miembros o cambia el archivo, se nota al momento
+            // Con ?v= (la URL cambia al editar el documento) Cloudflare puede
+            // guardarlo un día; sin versión o al descargar (cuenta la descarga)
+            // siempre revalida con el ETag (304).
             'Cache-Control': isPrivate
               ? 'private, no-store'
-              : 'public, no-cache',
+              : version && !asAttachment
+                ? 'public, max-age=3600, s-maxage=86400'
+                : 'public, no-cache',
             ...(isPrivate ? { Vary: 'Authorization' } : {}),
           },
         },

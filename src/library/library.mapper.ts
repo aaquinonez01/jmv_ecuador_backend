@@ -14,8 +14,22 @@ export function publicApiBase(req?: Request) {
   return DEFAULT_PUBLIC_API_URL;
 }
 
-export const documentFileUrl = (base: string, id: string) =>
-  `${base}/library/documents/${id}/file`;
+// ?v= sale del nombre interno del archivo (uuid.pdf), que solo cambia al subir
+// otro PDF: así Cloudflare y el navegador nunca entregan uno reemplazado. No se
+// usa updatedAt porque cambia con cada vista o descarga.
+function fileVersion(filePath?: string | null) {
+  const match = filePath?.match(/([0-9a-f]{8})[0-9a-f-]*\.pdf$/i);
+  return match ? match[1].toLowerCase() : undefined;
+}
+
+export const documentFileUrl = (
+  base: string,
+  id: string,
+  filePath?: string | null,
+) => {
+  const version = fileVersion(filePath);
+  return `${base}/library/documents/${id}/file${version ? `?v=${version}` : ''}`;
+};
 
 // Lo que ve cualquier visitante: nunca filePath ni coverPublicId, y sin
 // fileUrl ni externalUrl para los documentos solo para miembros (el enlace se
@@ -40,7 +54,7 @@ export function toPublicDocument(item: LibraryDocument, base: string) {
       item.visibility === 'publico' ? (item.externalUrl ?? null) : null,
     fileUrl:
       hasFile && item.visibility === 'publico'
-        ? documentFileUrl(base, item.id)
+        ? documentFileUrl(base, item.id, item.filePath)
         : null,
     hasFile,
     fileSize: item.fileSize ?? null,
@@ -62,7 +76,7 @@ export function toAdminDocument(item: LibraryDocument, base: string) {
   return {
     ...toPublicDocument(item, base),
     externalUrl: item.externalUrl ?? null,
-    fileUrl: hasFile ? documentFileUrl(base, item.id) : null,
+    fileUrl: hasFile ? documentFileUrl(base, item.id, item.filePath) : null,
     fileName: item.fileName ?? null,
     fileMime: item.fileMime ?? null,
   };
