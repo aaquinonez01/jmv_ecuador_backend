@@ -47,51 +47,6 @@ export const CALENDAR_DATES_SEED: CalendarDateSeed[] = [
     displayOrder: 0,
   },
   {
-    slug: 'sermon-de-folleville',
-    title: 'Sermón de Folleville',
-    subtitle: 'El día en que nació la Misión',
-    month: 1,
-    day: 25,
-    year: 1617,
-    category: 'fundadores',
-    summary:
-      'En el pueblo francés de Folleville, San Vicente predicó un sermón que movió a todo el pueblo a confesarse. La Congregación de la Misión recuerda ese día como su comienzo.',
-    story:
-      'A inicios de 1617, Vicente de Paúl era capellán de la familia Gondi. Visitando sus tierras, lo llamaron para atender a un campesino que estaba muriendo. Al confesarse, el hombre reconoció que llevaba años callando pecados por vergüenza, y que sin esa confesión se habría ido sin paz. La señora de Gondi se quedó impactada: ¿cuántas personas del campo vivían igual, sin nadie que las acompañara?\n\nElla le pidió a Vicente que predicara en la iglesia de Folleville. El 25 de enero de 1617, fiesta de la Conversión de San Pablo, habló de la confesión y de la misericordia de Dios. La respuesta fue tan grande que hubo que llamar a otros sacerdotes para atender a toda la gente que quería confesarse.\n\nAños después, San Vicente decía que aquel había sido el primer sermón de la Misión. Allí descubrió para qué lo quería Dios: para llevar el Evangelio a los pobres del campo, los más olvidados. De esa intuición nacería en 1625 la Congregación de la Misión.\n\nFolleville nos recuerda que una sola persona escuchada con atención puede cambiar el rumbo de una vida, y de una historia entera.',
-    quote: null,
-    quoteAuthor: null,
-    challenge:
-      'Busca hoy un momento de silencio para revisar tu vida con calma. Si hace tiempo no te confiesas, anímate a dar el paso esta semana.',
-    imageUrl: null,
-    source: 'https://famvin.org/calendar-feast-days/',
-    verified: true,
-    published: true,
-    displayOrder: 0,
-  },
-  {
-    slug: 'estatutos-internacionales-de-jmv',
-    title: 'Estatutos internacionales de JMV',
-    subtitle: 'Un mismo camino para JMV en todo el mundo',
-    month: 2,
-    day: 2,
-    year: 1999,
-    category: 'jmv',
-    summary:
-      'En 1999 se aprobaron los estatutos internacionales que hoy unen a los grupos de JMV de todos los países.',
-    story:
-      'Después de más de siglo y medio de historia, la asociación nacida de las apariciones de 1830 estaba presente en decenas de países, cada uno con su manera de organizarse. Hacía falta un marco común que dijera quiénes somos y cómo caminamos juntos.\n\nEn 1999, siendo Superior General el P. Robert P. Maloney, se aprobaron los estatutos internacionales de JMV. Según el archivo de la Familia Vicenciana, el 2 de febrero de 1999 el P. Maloney recibió la aprobación de la Santa Sede. Ese mismo año se estableció el Secretariado Internacional en Madrid, que en 2022 se trasladó a Manila.\n\nLos estatutos recogen nuestra identidad y nuestra forma de organizarnos. Gracias a ellos, un joven de JMV en Quito, en Madrid o en Manila sabe que forma parte de la misma familia.',
-    quote: null,
-    quoteAuthor: null,
-    challenge:
-      'Pídele a tu asesor o a tu consejo que te muestre los estatutos de JMV y lean juntos un artículo en la próxima reunión.',
-    imageUrl: null,
-    source:
-      'https://archive.famvin.org/2005/03/23/youth-a-constant-concern-of-the-superiors-general/',
-    verified: false,
-    published: true,
-    displayOrder: 0,
-  },
-  {
     slug: 'beata-rosalia-rendu',
     title: 'Beata Rosalía Rendu',
     subtitle: 'Hija de la Caridad en los barrios pobres de París',
@@ -201,74 +156,6 @@ export const CALENDAR_DATES_SEED: CalendarDateSeed[] = [
     imageUrl: null,
     source:
       'https://famvin.org/en/2017/03/14/calendarium-proprio/; https://archive.famvin.org/2016/02/03/change-of-date-of-feast-of-st-louise-may-9/',
-    verified: true,
-    published: true,
-    displayOrder: 0,
-  },
-  {
-    slug: 'beata-marta-wiecka',
-    title: 'Beata Marta Wiecka',
-    subtitle: 'Hija de la Caridad que dio su vida por otro',
-    month: 5,
-    day: 30,
-    year: 1904,
-    category: 'santos',
-    summary:
-      'Hija de la Caridad polaca que cuidó a los enfermos sin fijarse en su religión ni en su origen. Murió a los 30 años, contagiada de tifus en el hospital.',
-    story:
-      'Marta Wiecka nació en 1874 en Polonia, en una familia numerosa y creyente. Muy joven entró en las Hijas de la Caridad y pasó su vida sirviendo en hospitales de la región de Galitzia, en la actual Ucrania.\n\nLos enfermos la querían porque los trataba a todos igual: católicos, ortodoxos o judíos.\n\nEn el hospital de Śniatyn había que desinfectar la habitación de un enfermo de tifus. Para que no se arriesgara un joven trabajador que era padre de familia, Marta se ofreció a hacerlo ella. Se contagió y murió el 30 de mayo de 1904, con solo 30 años.\n\nFue beatificada en Leópolis (Ucrania) el 24 de mayo de 2008. Su vida nos enseña que la caridad se vuelve heroica en los gestos de cada día.',
-    quote: null,
-    quoteAuthor: null,
-    challenge:
-      'Ofrécete hoy a hacer una tarea que a otro le cuesta o le toca: lavar los platos, cubrir un turno, cargar algo pesado.',
-    imageUrl: null,
-    source:
-      'https://famvin.org/calendar-feast-days/; Biografía de la beatificación, 24 de mayo de 2008 (vatican.va)',
-    verified: true,
-    published: true,
-    displayOrder: 0,
-  },
-  {
-    slug: 'aprobacion-de-jmv-ecuador',
-    title: 'Aprobación oficial de JMV Ecuador',
-    subtitle: 'Nace el primer Consejo Nacional',
-    month: 6,
-    day: 12,
-    year: 2000,
-    category: 'ecuador',
-    summary:
-      'El P. Robert P. Maloney, Director General de la asociación, aprobó oficialmente JMV Ecuador y reconoció a su primer Consejo Nacional.',
-    story:
-      'Cinco años después de aquel primer grupo de Quito, JMV ya había crecido en distintas ciudades del país. Era hora de dar un paso más: organizarse como asociación nacional, unida a JMV en el mundo.\n\nEl 12 de junio de 2000, el P. Robert P. Maloney, Superior General de la Congregación de la Misión y Director General de la asociación, aprobó oficialmente JMV Ecuador. Ese día reconoció también al primer Consejo Nacional, liderado por el P. Jhon Macías, Sor Noemí Miño y Juan Carlos Cajo.\n\nDesde entonces, JMV Ecuador camina con su propio consejo, en comunión con el Secretariado Internacional y con toda la Familia Vicenciana. Es un buen día para agradecer a quienes han servido en los consejos, nacionales y locales, a lo largo de estos años.',
-    quote: null,
-    quoteAuthor: null,
-    challenge:
-      'Escríbele un mensaje de agradecimiento a alguien que sirva o haya servido en el consejo de tu grupo, de tu zona o del país.',
-    imageUrl: null,
-    source: 'Historia de JMV Ecuador (jmvecuador.org)',
-    verified: true,
-    published: true,
-    displayOrder: 0,
-  },
-  {
-    slug: 'aprobacion-pontificia-de-la-asociacion',
-    title: 'Aprobación pontificia de la asociación',
-    subtitle: 'Pío IX aprueba a las Hijas de María',
-    month: 6,
-    day: 20,
-    year: 1847,
-    category: 'jmv',
-    summary:
-      'El papa Pío IX aprobó la asociación de las Hijas de María Inmaculada, la raíz de lo que hoy es JMV.',
-    story:
-      'En 1830, la Virgen había confiado a Santa Catalina Labouré su deseo de que naciera una asociación de jóvenes. Diecisiete años después, ese deseo se hizo realidad en la Iglesia.\n\nEl P. Juan Bautista Étienne, Superior General de la Congregación de la Misión, obtuvo del papa Pío IX la aprobación el 20 de junio de 1847. La asociación quedó reconocida bajo el título de la Inmaculada Concepción, en las escuelas de las Hijas de la Caridad.\n\nAl principio la formaban muchachas: las Hijas de María. En 1850 se abrió a los muchachos y en 1876 a todos los jóvenes. Esa es la raíz de JMV: más de siglo y medio de jóvenes que crecen en la fe con María y sirven a los pobres.\n\nCada 20 de junio celebramos el cumpleaños de nuestra asociación.',
-    quote: null,
-    quoteAuthor: null,
-    challenge:
-      'Cuéntale hoy a alguien de tu grupo, o en tus redes, cómo nació JMV. Muchos no saben que nuestra historia empezó en 1830.',
-    imageUrl: '/images/historia/pio_9.jpg',
-    source:
-      'https://vinformation.org/en/june-20-anniversary-of-pontifical-approbation-of-the-children-of-mary-association/',
     verified: true,
     published: true,
     displayOrder: 0,
@@ -411,29 +298,6 @@ export const CALENDAR_DATES_SEED: CalendarDateSeed[] = [
     displayOrder: 0,
   },
   {
-    slug: 'beata-isabel-cristina-mrad-campos',
-    title: 'Beata Isabel Cristina Mrad Campos',
-    subtitle: 'Joven vicentina de Brasil',
-    month: 9,
-    day: 1,
-    year: 1982,
-    category: 'santos',
-    summary:
-      'Joven brasileña de la Sociedad de San Vicente de Paúl. Murió a los 20 años defendiendo su dignidad y fue beatificada en 2022.',
-    story:
-      'Isabel Cristina Mrad Campos nació en 1962 en Barbacena, en el estado de Minas Gerais, Brasil. Desde adolescente formó parte de la Sociedad de San Vicente de Paúl y sirvió a los pobres con alegría.\n\nSoñaba con ser médica para servir mejor a los enfermos. Por eso se mudó a Juiz de Fora para prepararse para la universidad.\n\nEl 1 de septiembre de 1982, un hombre la atacó en su departamento e intentó abusar de ella. Isabel Cristina se resistió con todas sus fuerzas y él la asesinó. Tenía 20 años.\n\nLa Iglesia la reconoció como mártir y fue beatificada en Barbacena el 10 de diciembre de 2022. Es una joven como nosotros, que vivió la fe y la caridad con alegría y defendió su dignidad hasta el final.',
-    quote: null,
-    quoteAuthor: null,
-    challenge:
-      'Reza hoy por las mujeres y los jóvenes que sufren violencia, y piensa en un gesto concreto para cuidar y respetar a los demás.',
-    imageUrl: null,
-    source:
-      'https://famvin.org/calendar-feast-days/; Vatican News (beatificación, 10 de diciembre de 2022)',
-    verified: true,
-    published: true,
-    displayOrder: 0,
-  },
-  {
     slug: 'beato-federico-ozanam',
     title: 'Beato Federico Ozanam',
     subtitle: 'Fundador de la Sociedad de San Vicente de Paúl',
@@ -497,29 +361,6 @@ export const CALENDAR_DATES_SEED: CalendarDateSeed[] = [
     imageUrl: null,
     source:
       'https://famvin.org/calendar-feast-days/; https://www.vatican.va/content/francesco/es/messages/pont-messages/2017/documents/papa-francesco_20170927_messaggio-famiglia-vincenziana.html',
-    verified: true,
-    published: true,
-    displayOrder: 0,
-  },
-  {
-    slug: 'martires-vicencianos-de-espana',
-    title: 'Mártires vicencianos de España',
-    subtitle: 'Testigos de la fe hasta el final',
-    month: 11,
-    day: 6,
-    year: null,
-    category: 'santos',
-    summary:
-      'Misioneros paúles, Hijas de la Caridad y laicos de la Familia Vicenciana que murieron por su fe en España. 60 de ellos fueron beatificados en Madrid en 2017.',
-    story:
-      'En los años treinta del siglo pasado, durante la persecución religiosa en España, muchos cristianos fueron asesinados solo por su fe. Entre ellos había miembros de la Familia Vicenciana: misioneros paúles, Hijas de la Caridad y laicos que seguían el camino de San Vicente.\n\nNo eran héroes de película. Eran personas que servían en parroquias, escuelas, hospitales y barrios pobres, y que no renegaron de Cristo.\n\nEl 11 de noviembre de 2017, en Madrid, 60 de estos mártires fueron beatificados. Fue el cierre del jubileo por los 400 años del carisma vicenciano. Cada 6 de noviembre la Familia Vicenciana los recuerda.\n\nSu testimonio nos recuerda que la fe se vive también cuando cuesta, y que el perdón es más fuerte que el odio.',
-    quote: null,
-    quoteAuthor: null,
-    challenge:
-      'Reza hoy por los cristianos que sufren persecución en el mundo, y da un paso para perdonar a alguien que te haya hecho daño.',
-    imageUrl: null,
-    source:
-      'https://famvin.org/calendar-feast-days/; ACI Prensa (beatificación, 11 de noviembre de 2017)',
     verified: true,
     published: true,
     displayOrder: 0,
