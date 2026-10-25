@@ -279,6 +279,25 @@ export class LibraryDocumentsService {
     }
   }
 
+  // Enlace o video para miembros: la URL solo se entrega con sesión válida
+  async resolveLink(id: string, authorization: string | undefined) {
+    const item = await this.repository.findOne({
+      where: { id, published: true },
+    });
+    if (!item || item.kind === 'pdf' || !item.externalUrl) {
+      throw new NotFoundException('Documento no encontrado');
+    }
+    if (item.visibility === 'miembros') {
+      const user = await this.userFromAuthorization(authorization);
+      if (!user) {
+        throw new UnauthorizedException(
+          'Inicia sesión para abrir este recurso',
+        );
+      }
+    }
+    return { url: item.externalUrl };
+  }
+
   // Decide si quien pide puede leer el PDF y devuelve dónde está en disco
   async resolveFile(
     id: string,

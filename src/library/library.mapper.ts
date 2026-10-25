@@ -18,7 +18,8 @@ export const documentFileUrl = (base: string, id: string) =>
   `${base}/library/documents/${id}/file`;
 
 // Lo que ve cualquier visitante: nunca filePath ni coverPublicId, y sin
-// fileUrl para los documentos solo para miembros.
+// fileUrl ni externalUrl para los documentos solo para miembros (el enlace se
+// pide con token en GET /library/documents/:id/link).
 export function toPublicDocument(item: LibraryDocument, base: string) {
   const hasFile = item.kind === 'pdf' && Boolean(item.filePath);
   return {
@@ -35,7 +36,8 @@ export function toPublicDocument(item: LibraryDocument, base: string) {
     tags: item.tags ?? [],
     visibility: item.visibility,
     coverUrl: item.coverUrl ?? null,
-    externalUrl: item.externalUrl ?? null,
+    externalUrl:
+      item.visibility === 'publico' ? (item.externalUrl ?? null) : null,
     fileUrl:
       hasFile && item.visibility === 'publico'
         ? documentFileUrl(base, item.id)
@@ -59,6 +61,7 @@ export function toAdminDocument(item: LibraryDocument, base: string) {
   const hasFile = item.kind === 'pdf' && Boolean(item.filePath);
   return {
     ...toPublicDocument(item, base),
+    externalUrl: item.externalUrl ?? null,
     fileUrl: hasFile ? documentFileUrl(base, item.id) : null,
     fileName: item.fileName ?? null,
     fileMime: item.fileMime ?? null,
