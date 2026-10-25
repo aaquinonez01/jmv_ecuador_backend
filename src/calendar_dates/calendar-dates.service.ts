@@ -152,6 +152,8 @@ export class CalendarDatesService implements OnApplicationBootstrap {
   }
 
   async create(dto: CreateCalendarDateDto, image?: Express.Multer.File) {
+    // Si el guardado falla, la imagen recién subida no debe quedar huérfana
+    let uploadedId: string | null = null;
     try {
       this.assertValidDay(dto.month, dto.day);
 
@@ -166,6 +168,7 @@ export class CalendarDatesService implements OnApplicationBootstrap {
       const uploaded = image
         ? await uploadImageWithPublicId(image, CALENDAR_FOLDER)
         : null;
+      uploadedId = uploaded?.publicId ?? null;
 
       const item = this.repository.create({
         slug,
@@ -192,6 +195,7 @@ export class CalendarDatesService implements OnApplicationBootstrap {
       this.revalidate(saved.slug);
       return this.mapDate(saved);
     } catch (error) {
+      if (uploadedId) await this.removeCloudinaryImage(uploadedId);
       this.handleExceptions(error);
     }
   }
@@ -238,6 +242,7 @@ export class CalendarDatesService implements OnApplicationBootstrap {
     dto: UpdateCalendarDateDto,
     image?: Express.Multer.File,
   ) {
+    let uploadedId: string | null = null;
     try {
       const item = await this.repository.findOne({ where: { id } });
       if (!item) throw new NotFoundException('Fecha no encontrada');
@@ -256,6 +261,7 @@ export class CalendarDatesService implements OnApplicationBootstrap {
       let staleImageId: string | null = null;
       if (image) {
         const uploaded = await uploadImageWithPublicId(image, CALENDAR_FOLDER);
+        uploadedId = uploaded.publicId;
         staleImageId = item.imagePublicId ?? null;
         item.imageUrl = uploaded.url;
         item.imagePublicId = uploaded.publicId;
@@ -289,6 +295,7 @@ export class CalendarDatesService implements OnApplicationBootstrap {
       this.revalidate(previousSlug, saved.slug);
       return this.mapDate(saved);
     } catch (error) {
+      if (uploadedId) await this.removeCloudinaryImage(uploadedId);
       this.handleExceptions(error);
     }
   }
