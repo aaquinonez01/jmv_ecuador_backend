@@ -11,7 +11,14 @@ import type { StorageEngine } from 'multer';
 export const LIBRARY_MAX_PDF_BYTES = 50 * 1024 * 1024;
 export const LIBRARY_MAX_COVER_BYTES = 10 * 1024 * 1024;
 
-const PDF_MIME_TYPES = ['application/pdf', 'application/x-pdf'];
+// Algunos selectores de Android y Windows mandan un .pdf sin tipo o como
+// octet-stream; la firma %PDF- se comprueba igual al escribirlo
+const PDF_MIME_TYPES = [
+  'application/pdf',
+  'application/x-pdf',
+  'application/octet-stream',
+  '',
+];
 const COVER_MIME_TYPES = [
   'image/jpeg',
   'image/jpg',
@@ -168,7 +175,10 @@ export const libraryMulterConfig: MulterOptions = {
     files: 2,
   },
   fileFilter: (_req, file, callback) => {
-    if (file.fieldname === 'file' && !PDF_MIME_TYPES.includes(file.mimetype)) {
+    if (
+      file.fieldname === 'file' &&
+      !PDF_MIME_TYPES.includes(file.mimetype ?? '')
+    ) {
       return callback(
         new BadRequestException('Solo se permiten archivos PDF'),
         false,
