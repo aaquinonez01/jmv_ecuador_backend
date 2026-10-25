@@ -78,6 +78,11 @@ services:
       NODE_ENV: production
       FRONTEND_URL: ${FRONTEND_URL:-http://frontend:3000}
       REVALIDATE_TOKEN: ${REVALIDATE_TOKEN}
+      # PDF de la biblioteca: se guardan en el volumen library_files
+      LIBRARY_STORAGE_DIR: /app/uploads/library
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-https://api.jmvecuador.org/api}
+    volumes:
+      - library_files:/app/uploads/library
     depends_on:
       db:
         condition: service_healthy
@@ -136,6 +141,8 @@ services:
 
 volumes:
   next_image_cache:
+  # PDF subidos a la Biblioteca JMV (incluirlo en los respaldos del VPS)
+  library_files:
 
 networks:
   web:
