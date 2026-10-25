@@ -128,13 +128,24 @@ export class StatutesService implements OnApplicationBootstrap {
     }
   }
 
-  private revalidate() {
-    void this.revalidation.revalidate(STATUTES_TAGS, STATUTES_PATHS);
+  // También la página propia de cada versión tocada (slug viejo y nuevo)
+  private revalidate(...slugs: (string | null | undefined)[]) {
+    const versionPaths = [...new Set(slugs.filter(Boolean))].map(
+      (slug) => `/quienes-somos/estatutos/${slug}`,
+    );
+    void this.revalidation.revalidate(STATUTES_TAGS, [
+      ...STATUTES_PATHS,
+      ...versionPaths,
+    ]);
   }
 
   // Desmarca la vigente anterior y marca esta, dentro de la misma transacción.
-  // La vigente siempre queda publicada.
+  // La vigente siempre queda publicada. Devuelve el slug de la que deja de serlo.
   private async setCurrent(manager: EntityManager, id: string) {
+    const previous = await manager.findOne(StatuteVersion, {
+      where: { isCurrent: true },
+      select: { id: true, slug: true },
+    });
     await manager
       .createQueryBuilder()
       .update(StatuteVersion)
@@ -149,6 +160,7 @@ export class StatutesService implements OnApplicationBootstrap {
         published: true,
       },
     );
+    return previous && previous.id !== id ? previous.slug : null;
   }
 
   async create(dto: CreateStatuteVersionDto) {
@@ -163,6 +175,7 @@ export class StatutesService implements OnApplicationBootstrap {
         );
       }
 
+      let previousSlug: string | null = null;
       const saved = await this.dataSource.transaction(async (manager) => {
         const item = await manager.save(
           manager.create(StatuteVersion, {
@@ -178,13 +191,15 @@ export class StatutesService implements OnApplicationBootstrap {
             published: dto.published ?? true,
           }),
         );
-        if (dto.isCurrent) await this.setCurrent(manager, item.id);
+        if (dto.isCurrent) {
+          previousSlug = await this.setCurrent(manager, item.id);
+        }
         return manager.findOneOrFail(StatuteVersion, {
           where: { id: item.id },
         });
       });
 
-      this.revalidate();
+      this.revalidate(saved.slug, previousSlug);
       return this.mapVersion(saved);
     } catch (error) {
       this.handleExceptions(error);
@@ -268,6 +283,7 @@ export class StatutesService implements OnApplicationBootstrap {
         );
       }
 
+      const oldSlug = item.slug;
       if (dto.slug && dto.slug !== item.slug) {
         await this.assertSlugAvailable(dto.slug, item.id);
         item.slug = dto.slug;
@@ -282,15 +298,16 @@ export class StatutesService implements OnApplicationBootstrap {
       }
       if (dto.published !== undefined) item.published = dto.published;
 
+      let previousSlug: string | null = null;
       const saved = await this.dataSource.transaction(async (manager) => {
         await manager.save(item);
         if (dto.isCurrent && !item.isCurrent) {
-          await this.setCurrent(manager, item.id);
+          previousSlug = await this.setCurrent(manager, item.id);
         }
         return manager.findOneOrFail(StatuteVersion, { where: { id } });
       });
 
-      this.revalidate();
+      this.revalidate(oldSlug, saved.slug, previousSlug);
       return this.mapVersion(saved);
     } catch (error) {
       this.handleExceptions(error);
@@ -299,15 +316,16 @@ export class StatutesService implements OnApplicationBootstrap {
 
   async makeCurrent(id: string) {
     try {
+      let previousSlug: string | null = null;
       const saved = await this.dataSource.transaction(async (manager) => {
         const item = await manager.findOne(StatuteVersion, { where: { id } });
         if (!item) {
           throw new NotFoundException('Versión de los estatutos no encontrada');
         }
-        await this.setCurrent(manager, id);
+        previousSlug = await this.setCurrent(manager, id);
         return manager.findOneOrFail(StatuteVersion, { where: { id } });
       });
-      this.revalidate();
+      this.revalidate(saved.slug, previousSlug);
       return this.mapVersion(saved);
     } catch (error) {
       this.handleExceptions(error);
@@ -325,8 +343,9 @@ export class StatutesService implements OnApplicationBootstrap {
           'No puedes eliminar la versión vigente. Marca otra como vigente primero',
         );
       }
+      const { slug } = item;
       await this.repository.remove(item);
-      this.revalidate();
+      this.revalidate(slug);
       return { message: 'Versión de los estatutos eliminada correctamente' };
     } catch (error) {
       this.handleExceptions(error);
