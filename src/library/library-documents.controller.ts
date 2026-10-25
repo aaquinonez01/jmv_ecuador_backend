@@ -69,6 +69,18 @@ export class LibraryDocumentsController {
     return this.service.findOne(id, publicApiBase(req));
   }
 
+  @Get(':id/link')
+  async link(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('authorization') authorization: string | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.service.resolveLink(id, authorization);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('Vary', 'Authorization');
+    return result;
+  }
+
   // PDF con soporte de Range (pdf.js lo pide por partes). Los documentos para
   // miembros exigen "Authorization: Bearer <token>".
   @Get(':id/file')
@@ -98,9 +110,11 @@ export class LibraryDocumentsController {
           headers: {
             'Content-Type': 'application/pdf',
             'Content-Disposition': `${asAttachment ? 'attachment' : 'inline'}; filename="${fileName}"`,
+            // Siempre revalida con el ETag (304): si el admin lo pasa a
+            // miembros o cambia el archivo, se nota al momento
             'Cache-Control': isPrivate
               ? 'private, no-store'
-              : 'public, max-age=3600',
+              : 'public, no-cache',
             ...(isPrivate ? { Vary: 'Authorization' } : {}),
           },
         },
