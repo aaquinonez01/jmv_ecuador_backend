@@ -37,6 +37,10 @@ async function bootstrap() {
       'https://jmvecuador.org',
       'https://www.jmvecuador.org',
       'http://localhost:3000', // para que sigas pudiendo probar en local
+      // En desarrollo, cualquier puerto de localhost
+      ...(process.env.NODE_ENV === 'production'
+        ? []
+        : [/^http:\/\/(localhost|127\.0\.0\.1):\d+$/]),
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: [
@@ -44,6 +48,18 @@ async function bootstrap() {
       'Authorization',
       'Accept',
       'X-Requested-With',
+      // El lector PDF de la biblioteca pide el archivo por partes
+      'Range',
+      'If-Range',
+      'If-None-Match',
+      'If-Modified-Since',
+    ],
+    exposedHeaders: [
+      'Accept-Ranges',
+      'Content-Range',
+      'Content-Length',
+      'Content-Disposition',
+      'ETag',
     ],
     credentials: true,
   });
