@@ -21,6 +21,7 @@ import { ConsejoNacionalModule } from './consejo_nacional/consejo-nacional.modul
 import { AsesoresModule } from './asesores/asesores.module';
 import { HomeAnnouncementsModule } from './home_announcements/home-announcements.module';
 import { ContactMessagesModule } from './contact_messages/contact-messages.module';
+import { CalendarDatesModule } from './calendar_dates/calendar-dates.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -71,6 +72,7 @@ import { ContactMessagesModule } from './contact_messages/contact-messages.modul
     AsesoresModule,
     HomeAnnouncementsModule,
     ContactMessagesModule,
+    CalendarDatesModule,
   ],
   controllers: [],
   providers: [],
