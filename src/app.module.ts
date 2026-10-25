@@ -23,6 +23,8 @@ import { HomeAnnouncementsModule } from './home_announcements/home-announcements
 import { ContactMessagesModule } from './contact_messages/contact-messages.module';
 import { CalendarDatesModule } from './calendar_dates/calendar-dates.module';
 import { LibraryModule } from './library/library.module';
+import { StatutesModule } from './statutes/statutes.module';
+import { DonationsModule } from './donations/donations.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -75,6 +77,8 @@ import { LibraryModule } from './library/library.module';
     ContactMessagesModule,
     CalendarDatesModule,
     LibraryModule,
+    StatutesModule,
+    DonationsModule,
   ],
   controllers: [],
   providers: [],
