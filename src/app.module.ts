@@ -22,6 +22,7 @@ import { AsesoresModule } from './asesores/asesores.module';
 import { HomeAnnouncementsModule } from './home_announcements/home-announcements.module';
 import { ContactMessagesModule } from './contact_messages/contact-messages.module';
 import { CalendarDatesModule } from './calendar_dates/calendar-dates.module';
+import { LibraryModule } from './library/library.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -73,6 +74,7 @@ import { CalendarDatesModule } from './calendar_dates/calendar-dates.module';
     HomeAnnouncementsModule,
     ContactMessagesModule,
     CalendarDatesModule,
+    LibraryModule,
   ],
   controllers: [],
   providers: [],
