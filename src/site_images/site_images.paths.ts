@@ -1,11 +1,15 @@
 // Rutas de la web pública que muestran cada grupo de espacios de foto.
 // El id de un espacio es "<página>.<uso>" (p. ej. "home.hero", "pilares.comunidad"),
 // así que además del tag 'site_images' se revalida la ruta de su página.
+// Las rutas se expiran al momento (revalidatePath), a diferencia del tag, que
+// se sirve "stale-while-revalidate": así nadie recibe una foto ya borrada.
 const PAGE_PATHS: Record<string, string[]> = {
   home: ['/'],
   'quienes-somos': ['/quienes-somos'],
   historia: ['/quienes-somos/historia'],
-  estatutos: ['/quienes-somos/estatutos'],
+  // La cabecera también se ve en cada versión de los estatutos. La web
+  // revalida las rutas con "[...]" como patrón (todas sus páginas).
+  estatutos: ['/quienes-somos/estatutos', '/quienes-somos/estatutos/[slug]'],
   estructura: ['/estructura'],
   pilares: ['/pilares'],
   formacion: ['/formacion'],
@@ -21,9 +25,18 @@ const PAGE_PATHS: Record<string, string[]> = {
   biblioteca: ['/biblioteca'],
 };
 
+// Espacios que además se muestran en otra página (id completo → rutas extra).
+// Las cabeceras de ejes, santos y pilares ilustran las tarjetas de /formacion.
+const EXTRA_PATHS: Record<string, string[]> = {
+  'ejes.hero': ['/formacion'],
+  'santos.hero': ['/formacion'],
+  'pilares.hero': ['/formacion'],
+};
+
 export function pathsForSection(section: string): string[] {
   const page = section.split('.')[0];
-  return PAGE_PATHS[page] ?? ['/'];
+  const own = PAGE_PATHS[page] ?? ['/'];
+  return [...new Set([...own, ...(EXTRA_PATHS[section] ?? [])])];
 }
 
 const VERSION = /^v\d+$/;
