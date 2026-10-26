@@ -22,6 +22,11 @@ export class SiteImage {
   @Column({ type: 'text' })
   url: string;
 
+  // public_id de Cloudinary, para borrar el archivo al eliminar la foto.
+  // Las fotos antiguas no lo tienen: se deduce de la URL.
+  @Column({ type: 'text', nullable: true })
+  publicId?: string | null;
+
   @Column({ type: 'text' })
   filename: string;
 
