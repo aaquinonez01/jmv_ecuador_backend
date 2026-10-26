@@ -38,6 +38,13 @@ export class SiteImagesController {
     return this.service.findPublic(query.section, query.subsection);
   }
 
+  /** Admin: todas las fotos de todos los espacios, para el panel (una sola petición) */
+  @Get('all')
+  @Auth(ValidRoles.ADMIN)
+  findAll() {
+    return this.service.findAll();
+  }
+
   /** Admin: todas las fotos del espacio (incluye ocultas y metadatos) */
   @Get()
   @Auth(ValidRoles.ADMIN)

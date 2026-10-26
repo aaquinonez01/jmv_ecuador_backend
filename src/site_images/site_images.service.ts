@@ -62,6 +62,17 @@ export class SiteImagesService {
       .getMany();
   }
 
+  /** Admin: todas las fotos de todos los espacios, agrupables por section */
+  async findAll() {
+    return this.repo
+      .createQueryBuilder('img')
+      .orderBy('img.section', 'ASC')
+      .addOrderBy('img.subsection', 'ASC', 'NULLS FIRST')
+      .addOrderBy('img.orden', 'ASC')
+      .addOrderBy('img.createdAt', 'ASC')
+      .getMany();
+  }
+
   /** Público: solo fotos activas y solo los campos que la web necesita */
   async findPublic(
     section: string,
