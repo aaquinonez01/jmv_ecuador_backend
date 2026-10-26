@@ -42,7 +42,25 @@ ALTER TABLE "site_image" ADD COLUMN IF NOT EXISTS "publicId" text;
 ALTER TABLE "site_image" ADD COLUMN IF NOT EXISTS "alt" text NOT NULL DEFAULT '';
 ALTER TABLE "site_image" ALTER COLUMN "alt" DROP DEFAULT;
 
+-- Las filas antiguas quedan con alt vacío, y la API pide al menos 3 caracteres.
+-- Se rellenan con un texto genérico que incluye el nombre del archivo, para
+-- poder reconocerlas y corregirlas desde /admin/imagenes («Editar texto
+-- alternativo»). Al final se listan las que conviene revisar.
+UPDATE "site_image"
+   SET "alt" = 'Foto de JMV Ecuador (' || COALESCE(NULLIF(btrim("filename"), ''), 'sin nombre') || ')'
+ WHERE btrim("alt") = '';
+
 CREATE INDEX IF NOT EXISTS "idx_site_image_section"
   ON "site_image" ("section", "subsection", "orden");
 
 COMMIT;
+
+-- Fotos para revisar: texto alternativo genérico, o sin espacio asignado (con
+-- subsection o de secciones antiguas). Estas últimas no se muestran en la web y
+-- aparecen en el panel en «Sin espacio asignado», donde se pueden eliminar.
+SELECT "id", "section", "subsection", "filename", "alt"
+  FROM "site_image"
+ WHERE "alt" LIKE 'Foto de JMV Ecuador (%'
+    OR "subsection" IS NOT NULL
+    OR "section" !~ '^[a-z0-9-]+\.[a-z0-9-]+$'
+ ORDER BY "section", "orden";
