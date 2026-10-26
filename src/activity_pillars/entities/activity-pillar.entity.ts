@@ -1,4 +1,5 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { ActivityTypeCatalog } from 'src/activity_types/entities/activity-type.entity';
 import { Activity } from 'src/activities/entities/activity.entity';
 import { UpcomingActivity } from 'src/upcoming_activities/entities/upcoming-activity.entity';
 
@@ -40,6 +41,9 @@ export class ActivityPillar {
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt: Date;
+
+  @OneToMany(() => ActivityTypeCatalog, (type) => type.pillar)
+  types?: ActivityTypeCatalog[];
 
   @OneToMany(() => Activity, (activity) => activity.pillar)
   activities?: Activity[];

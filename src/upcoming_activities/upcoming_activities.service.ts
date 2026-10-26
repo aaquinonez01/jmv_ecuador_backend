@@ -1,4 +1,5 @@
 import {
+  HttpException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -10,6 +11,7 @@ import { UpcomingActivity } from './entities/upcoming-activity.entity';
 import { UpcomingActivityDocument } from './entities/upcoming-activity-document.entity';
 import { ActivityPillar } from 'src/activity_pillars/entities/activity-pillar.entity';
 import { ActivityTypeCatalog } from 'src/activity_types/entities/activity-type.entity';
+import { assertTypeMatchesPillar } from 'src/activity_types/type-pillar.validator';
 import { CreateUpcomingActivityDto } from './dto/create-upcoming-activity.dto';
 import { UpdateUpcomingActivityDto } from './dto/update-upcoming-activity.dto';
 import { FilterUpcomingActivitiesDto } from './dto/filter-upcoming-activities.dto';
@@ -130,6 +132,11 @@ export class UpcomingActivitiesService {
     },
   ) {
     try {
+      await assertTypeMatchesPillar(
+        this.upcomingRepository.manager,
+        dto.typeId,
+        dto.pillarId,
+      );
       const count = await this.upcomingRepository.count();
       const coverImage = files.coverImage?.[0];
       const documentFiles = files.documents || [];
@@ -277,6 +284,11 @@ export class UpcomingActivitiesService {
       if (!activity) {
         throw new NotFoundException('Proxima actividad no encontrada');
       }
+      await assertTypeMatchesPillar(
+        this.upcomingRepository.manager,
+        dto.typeId ?? activity.type?.id,
+        dto.pillarId ?? activity.pillar?.id,
+      );
 
       if (files.coverImage?.[0]) {
         activity.coverImageUrl =
@@ -372,7 +384,7 @@ export class UpcomingActivitiesService {
 
   private handleExceptions(error: unknown): never {
     this.logger.error(error);
-    if (error instanceof NotFoundException) {
+    if (error instanceof HttpException) {
       throw error;
     }
     throw new InternalServerErrorException(

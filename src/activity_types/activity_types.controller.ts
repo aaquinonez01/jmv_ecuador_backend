@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { ActivityTypesService } from './activity_types.service';
 import { CreateActivityTypeDto } from './dto/create-activity-type.dto';
 import { UpdateActivityTypeDto } from './dto/update-activity-type.dto';

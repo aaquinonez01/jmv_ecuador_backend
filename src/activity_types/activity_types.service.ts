@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -7,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ActivityPillar } from 'src/activity_pillars/entities/activity-pillar.entity';
 import { ActivityTypeCatalog } from './entities/activity-type.entity';
 import { CreateActivityTypeDto } from './dto/create-activity-type.dto';
 import { UpdateActivityTypeDto } from './dto/update-activity-type.dto';
@@ -26,6 +28,7 @@ export class ActivityTypesService {
 
   async create(dto: CreateActivityTypeDto) {
     try {
+      await this.assertPillarExists(dto.pillarId);
       const slug = dto.slug || this.generateSlug(dto.name);
       const exists = await this.repo.findOne({
         where: [{ slug }, { name: dto.name }],
@@ -66,6 +69,7 @@ export class ActivityTypesService {
   async update(id: string, dto: UpdateActivityTypeDto) {
     try {
       const type = await this.findOne(id);
+      if (dto.pillarId) await this.assertPillarExists(dto.pillarId);
       const slug =
         dto.slug || (dto.name ? this.generateSlug(dto.name) : type.slug);
       const merged = this.repo.merge(type, { ...dto, slug });
@@ -88,6 +92,14 @@ export class ActivityTypesService {
     }
   }
 
+  private async assertPillarExists(pillarId?: string) {
+    if (!pillarId) return;
+    const exists = await this.repo.manager.exists(ActivityPillar, {
+      where: { id: pillarId },
+    });
+    if (!exists) throw new BadRequestException('El pilar elegido no existe');
+  }
+
   private generateSlug(name: string) {
     return name
       .toLowerCase()
@@ -102,6 +114,7 @@ export class ActivityTypesService {
   private handleExceptions(error: unknown): never {
     this.logger.error(error);
     if (
+      error instanceof BadRequestException ||
       error instanceof ConflictException ||
       error instanceof NotFoundException
     ) {

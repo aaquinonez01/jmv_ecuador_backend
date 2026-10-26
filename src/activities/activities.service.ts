@@ -1,4 +1,5 @@
 import {
+  HttpException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -10,6 +11,7 @@ import { Activity } from './entities/activity.entity';
 import { ActivityImage } from './entities/activity-image.entity';
 import { ActivityPillar } from 'src/activity_pillars/entities/activity-pillar.entity';
 import { ActivityTypeCatalog } from 'src/activity_types/entities/activity-type.entity';
+import { assertTypeMatchesPillar } from 'src/activity_types/type-pillar.validator';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
 import { FilterActivitiesDto } from './dto/filter-activities.dto';
@@ -34,13 +36,15 @@ export class ActivitiesService {
   ) {}
 
   private normalizeBoolean(value?: string | boolean, defaultValue = false) {
-    if (value === undefined || value === null || value === '') return defaultValue;
+    if (value === undefined || value === null || value === '')
+      return defaultValue;
     if (typeof value === 'boolean') return value;
     return ['true', '1', 'on'].includes(value.toLowerCase());
   }
 
   private normalizeNumber(value?: string | number, defaultValue = 0) {
-    if (value === undefined || value === null || value === '') return defaultValue;
+    if (value === undefined || value === null || value === '')
+      return defaultValue;
     if (typeof value === 'number') return value;
     const parsed = Number(value);
     return Number.isNaN(parsed) ? defaultValue : parsed;
@@ -87,13 +91,15 @@ export class ActivitiesService {
           }
         : null,
       gallery:
-        activity.gallery?.sort((a, b) => a.order - b.order).map((image) => ({
-          id: image.id,
-          url: image.url,
-          alt: image.alt,
-          filename: image.filename,
-          order: image.order,
-        })) || [],
+        activity.gallery
+          ?.sort((a, b) => a.order - b.order)
+          .map((image) => ({
+            id: image.id,
+            url: image.url,
+            alt: image.alt,
+            filename: image.filename,
+            order: image.order,
+          })) || [],
     };
   }
 
@@ -109,6 +115,11 @@ export class ActivitiesService {
     },
   ) {
     try {
+      await assertTypeMatchesPillar(
+        this.activityRepository.manager,
+        dto.typeId,
+        dto.pillarId,
+      );
       const count = await this.activityRepository.count();
       const coverImage = files.coverImage?.[0];
       const galleryFiles = files.gallery || [];
@@ -132,7 +143,10 @@ export class ActivitiesService {
         coverImageUrl: coverImageUrl ?? undefined,
         published: this.normalizeBoolean(dto.published, true),
         featured: this.normalizeBoolean(dto.featured, false),
-        showInActivitiesPage: this.normalizeBoolean(dto.showInActivitiesPage, true),
+        showInActivitiesPage: this.normalizeBoolean(
+          dto.showInActivitiesPage,
+          true,
+        ),
         displayOrder: this.normalizeNumber(dto.displayOrder, count + 1),
         pillar: this.relationById<ActivityPillar>(dto.pillarId),
         type: this.relationById<ActivityTypeCatalog>(dto.typeId),
@@ -228,6 +242,11 @@ export class ActivitiesService {
       if (!activity) {
         throw new NotFoundException('Actividad no encontrada');
       }
+      await assertTypeMatchesPillar(
+        this.activityRepository.manager,
+        dto.typeId ?? activity.type?.id,
+        dto.pillarId ?? activity.pillar?.id,
+      );
 
       if (files.coverImage?.[0]) {
         activity.coverImageUrl =
@@ -311,7 +330,7 @@ export class ActivitiesService {
 
   private handleExceptions(error: unknown): never {
     this.logger.error(error);
-    if (error instanceof NotFoundException) {
+    if (error instanceof HttpException) {
       throw error;
     }
     throw new InternalServerErrorException('Error al gestionar actividades');
