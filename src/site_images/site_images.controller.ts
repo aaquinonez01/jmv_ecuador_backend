@@ -3,7 +3,9 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -15,6 +17,7 @@ import { SiteImagesService } from './site_images.service';
 import { CreateSiteImageDto } from './dto/create-site-image.dto';
 import { UpdateSiteImageDto } from './dto/update-site-image.dto';
 import { ReorderSiteImagesDto } from './dto/reorder-site-images.dto';
+import { FindSiteImagesDto } from './dto/find-site-images.dto';
 import { siteImagesMulterConfig } from './config/multer.config';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { ValidRoles } from 'src/auth/interfaces/valid-roles.interface';
@@ -25,12 +28,28 @@ import { User } from 'src/auth/entities/user';
 export class SiteImagesController {
   constructor(private readonly service: SiteImagesService) {}
 
+  /**
+   * Público: fotos activas de un espacio de la web, en orden.
+   * GET /site-images/public?section=home.hero -> { items: [{ id, url, alt, orden }] }
+   */
+  @Get('public')
+  @Header('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
+  findPublic(@Query() query: FindSiteImagesDto) {
+    return this.service.findPublic(query.section, query.subsection);
+  }
+
+  /** Admin: todas las fotos de todos los espacios, para el panel (una sola petición) */
+  @Get('all')
+  @Auth(ValidRoles.ADMIN)
+  findAll() {
+    return this.service.findAll();
+  }
+
+  /** Admin: todas las fotos del espacio (incluye ocultas y metadatos) */
   @Get()
-  find(
-    @Query('section') section: string,
-    @Query('subsection') subsection?: string,
-  ) {
-    return this.service.find(section, subsection);
+  @Auth(ValidRoles.ADMIN)
+  find(@Query() query: FindSiteImagesDto) {
+    return this.service.find(query.section, query.subsection);
   }
 
   @Post()
@@ -53,13 +72,16 @@ export class SiteImagesController {
 
   @Patch(':id')
   @Auth(ValidRoles.ADMIN)
-  update(@Param('id') id: string, @Body() dto: UpdateSiteImageDto) {
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateSiteImageDto,
+  ) {
     return this.service.update(id, dto);
   }
 
   @Delete(':id')
   @Auth(ValidRoles.ADMIN)
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.remove(id);
   }
 }
