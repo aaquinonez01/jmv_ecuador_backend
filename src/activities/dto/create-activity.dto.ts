@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MinLength } from 'class-validator';
+import { IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
 
 export class CreateActivityDto {
   @IsString()
@@ -28,9 +28,9 @@ export class CreateActivityDto {
   @IsString()
   endDate?: string;
 
-  @IsOptional()
-  @IsString()
-  pillarId?: string;
+  // Toda actividad pertenece a uno de los cuatro pilares (catálogo activity_pillars)
+  @IsUUID('all', { message: 'Elige el pilar al que pertenece la actividad' })
+  pillarId!: string;
 
   @IsOptional()
   @IsString()
