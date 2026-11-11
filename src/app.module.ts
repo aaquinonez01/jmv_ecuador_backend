@@ -14,6 +14,7 @@ import { ActivityTypesModule } from './activity_types/activity_types.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { UpcomingActivitiesModule } from './upcoming_activities/upcoming_activities.module';
 import { TestimonialsModule } from './testimonials/testimonials.module';
+import { FormationModule } from './formation/formation.module';
 import { ZonasModule } from './zonas/zonas.module';
 import { ComunidadesModule } from './comunidades/comunidades.module';
 import { QuizModule } from './quiz/quiz.module';
@@ -68,6 +69,7 @@ import { DonationsModule } from './donations/donations.module';
     ActivitiesModule,
     UpcomingActivitiesModule,
     TestimonialsModule,
+    FormationModule,
     ZonasModule,
     ComunidadesModule,
     QuizModule,
