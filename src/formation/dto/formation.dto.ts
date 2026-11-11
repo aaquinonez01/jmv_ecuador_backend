@@ -3,118 +3,137 @@ import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsDateString,
   IsIn,
   IsInt,
   IsOptional,
   IsString,
   IsUrl,
+  Matches,
   Max,
   MaxLength,
   Min,
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import { FORMATION_PILLARS, FORMATION_STEPS } from '../entities/formation-encounter.entity';
-import type { FormationPillar, FormationStep } from '../entities/formation-encounter.entity';
+import {
+  FORMATION_AXES,
+  FORMATION_LEVELS,
+  MATERIAL_TYPES,
+  PRAYER_CATEGORIES,
+  REFERENCE_TYPES,
+} from '../entities/formation.entities';
+import type {
+  FormationAxis,
+  FormationLevel,
+  MaterialType,
+  PrayerCategory,
+  ReferenceType,
+} from '../entities/formation.entities';
 
-class ContemplarDto {
-  @IsOptional() @IsString() @MaxLength(120)
-  passageRef?: string;
+const URL_OPTS = { require_protocol: true };
 
-  @IsOptional() @IsString() @MaxLength(3000)
-  passageText?: string;
+class ReferenceDto {
+  @IsIn(REFERENCE_TYPES)
+  type: ReferenceType;
 
-  @IsOptional() @IsString() @MaxLength(3000)
-  prayer?: string;
+  @IsString() @MinLength(1) @MaxLength(200)
+  title: string;
+
+  @IsOptional() @IsString() @MaxLength(300)
+  detail?: string;
+
+  @IsOptional() @IsUrl(URL_OPTS)
+  url?: string;
 }
 
-class VivirCardDto {
-  @IsOptional() @IsString() @MaxLength(160)
-  title?: string;
-
-  @IsString() @MinLength(1) @MaxLength(3000)
-  body: string;
-}
-
-class VivirDto {
-  @IsArray() @ArrayMaxSize(12)
-  @ValidateNested({ each: true }) @Type(() => VivirCardDto)
-  cards: VivirCardDto[];
-
-  @IsOptional() @IsUrl({ require_protocol: true })
-  videoUrl?: string;
-
-  @IsOptional() @IsString() @MaxLength(200)
-  documentSlug?: string;
-}
-
-class ServirDto {
-  @IsString() @MaxLength(1000)
-  commitment: string;
-}
-
-class QuizQuestionDto {
-  @IsString() @MinLength(3) @MaxLength(300)
-  question: string;
-
-  @IsArray() @ArrayMaxSize(5)
-  @IsString({ each: true }) @MaxLength(200, { each: true })
-  options: string[];
-
-  @IsInt() @Min(0) @Max(4)
-  correct: number;
-
-  @IsOptional() @IsString() @MaxLength(600)
-  explanation?: string;
-}
-
-export class UpsertEncounterDto {
+export class UpsertTopicDto {
   @IsString() @MinLength(3) @MaxLength(160)
   title: string;
 
-  @IsOptional() @IsString() @MaxLength(500)
+  @IsOptional() @IsString() @MaxLength(1500)
   summary?: string;
 
-  @IsIn(FORMATION_STEPS)
-  step: FormationStep;
+  @IsIn(FORMATION_AXES)
+  axis: FormationAxis;
 
-  @IsOptional() @IsIn(FORMATION_PILLARS)
-  pillar?: FormationPillar | null;
+  @IsArray() @ArrayMaxSize(3) @IsIn(FORMATION_LEVELS, { each: true })
+  levels: FormationLevel[];
 
-  @IsOptional() @IsInt() @Min(0) @Max(999)
-  displayOrder?: number;
-
-  @IsOptional() @IsInt() @Min(5) @Max(120)
-  durationMinutes?: number;
-
-  @IsOptional() @IsUrl({ require_protocol: true })
-  coverImageUrl?: string | null;
-
-  @ValidateNested() @Type(() => ContemplarDto)
-  contemplar: ContemplarDto;
-
-  @ValidateNested() @Type(() => VivirDto)
-  vivir: VivirDto;
-
-  @ValidateNested() @Type(() => ServirDto)
-  servir: ServirDto;
-
-  @IsArray() @ArrayMaxSize(8)
+  @IsArray() @ArrayMaxSize(20)
   @IsString({ each: true }) @MaxLength(400, { each: true })
-  reflectionQuestions: string[];
+  subtopics: string[];
 
-  @IsArray() @ArrayMaxSize(10)
-  @ValidateNested({ each: true }) @Type(() => QuizQuestionDto)
-  quiz: QuizQuestionDto[];
+  @IsArray() @ArrayMaxSize(30)
+  @ValidateNested({ each: true }) @Type(() => ReferenceDto)
+  references: ReferenceDto[];
 
-  @IsOptional() @IsString() @MaxLength(200)
-  source?: string;
+  @IsOptional() @IsInt() @Min(0) @Max(9999)
+  displayOrder?: number;
 
   @IsOptional() @IsBoolean()
   published?: boolean;
 }
 
-export class CompleteEncounterDto {
-  @IsOptional() @IsInt() @Min(0) @Max(10)
-  quizScore?: number;
+class MaterialDto {
+  @IsString() @MinLength(1) @MaxLength(200)
+  title: string;
+
+  @IsIn(MATERIAL_TYPES)
+  type: MaterialType;
+
+  @IsOptional() @IsUrl(URL_OPTS)
+  url?: string;
+
+  // Solo nombres que genera el servidor al subir (uuid.pdf)
+  @IsOptional()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.pdf$/)
+  fileName?: string;
+}
+
+export class UpsertTrainingDto {
+  @IsString() @MinLength(3) @MaxLength(200)
+  title: string;
+
+  @IsOptional() @IsString() @MaxLength(200)
+  speaker?: string;
+
+  @IsDateString()
+  startsAt: string;
+
+  @IsOptional() @IsString() @MaxLength(3000)
+  description?: string;
+
+  @IsOptional() @IsUrl(URL_OPTS)
+  meetingUrl?: string;
+
+  @IsOptional() @IsUrl(URL_OPTS)
+  recordingUrl?: string;
+
+  @IsArray() @ArrayMaxSize(30)
+  @ValidateNested({ each: true }) @Type(() => MaterialDto)
+  materials: MaterialDto[];
+
+  @IsOptional() @IsBoolean()
+  published?: boolean;
+}
+
+export class UpsertPrayerDto {
+  @IsString() @MinLength(2) @MaxLength(160)
+  title: string;
+
+  @IsIn(PRAYER_CATEGORIES)
+  category: PrayerCategory;
+
+  @IsString() @MinLength(5) @MaxLength(8000)
+  text: string;
+
+  @IsOptional() @IsString() @MaxLength(200)
+  source?: string;
+
+  @IsOptional() @IsInt() @Min(0) @Max(9999)
+  displayOrder?: number;
+
+  @IsOptional() @IsBoolean()
+  published?: boolean;
 }
