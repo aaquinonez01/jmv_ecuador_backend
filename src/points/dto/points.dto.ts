@@ -1,6 +1,9 @@
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
+  IsBoolean,
+  IsDateString,
+  IsEmail,
   IsArray,
   IsIn,
   IsInt,
@@ -59,6 +62,60 @@ export class ReviewMemberDto {
   @IsOptional()
   @IsUUID()
   comunidadId?: string;
+}
+
+/** Usuario creado por el Consejo desde el admin */
+export class CreateMemberDto {
+  @IsString()
+  @MinLength(3)
+  @MaxLength(120)
+  fullName!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  displayName?: string;
+
+  @IsEmail({}, { message: 'El correo no es válido' })
+  @MaxLength(160)
+  email!: string;
+
+  /** Si no viene, se genera una contraseña temporal */
+  @IsOptional()
+  @IsString()
+  @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
+  @MaxLength(50)
+  password?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  phoneNumber?: string;
+
+  @IsOptional()
+  @IsDateString()
+  birthDate?: string;
+
+  @IsOptional()
+  @IsUUID()
+  comunidadId?: string;
+
+  @IsOptional()
+  @IsIn(MEMBER_LEVELS)
+  level?: string;
+
+  /** Si el Consejo ya conoce a la persona, queda verificada de una vez */
+  @IsOptional()
+  @IsBoolean()
+  verified?: boolean;
+}
+
+export class ResetPasswordAdminDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
+  @MaxLength(50)
+  password?: string;
 }
 
 export class AdjustPointsDto {

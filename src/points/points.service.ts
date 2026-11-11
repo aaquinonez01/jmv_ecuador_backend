@@ -1,10 +1,13 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as bcrypt from 'bcrypt';
+import { randomInt } from 'crypto';
 import { Brackets, DataSource, EntityManager, Repository } from 'typeorm';
 import { User } from 'src/auth/entities/user';
 import { Comunidad } from 'src/comunidades/entities/comunidad.entity';
@@ -15,8 +18,10 @@ import {
 } from './entities/points.entities';
 import {
   AdjustPointsDto,
+  CreateMemberDto,
   ListMembersDto,
   MemberRequestDto,
+  ResetPasswordAdminDto,
   ReviewMemberDto,
   UpdateRulesDto,
 } from './dto/points.dto';
@@ -303,6 +308,67 @@ export class PointsService {
     user.memberVerifiedAt = dto.status === 'verified' ? new Date() : null;
     await this.users.save(user);
     return memberView(user);
+  }
+
+  /** Contraseña temporal fácil de dictar: sin O/0 ni I/l/1 */
+  private tempPassword() {
+    const A = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+    const a = 'abcdefghjkmnpqrstuvwxyz';
+    const n = '23456789';
+    const pick = (s: string, k: number) =>
+      Array.from({ length: k }, () => s[randomInt(s.length)]).join('');
+    return `${pick(A, 1)}${pick(a, 4)}${pick(n, 4)}`;
+  }
+
+  async createMember(dto: CreateMemberDto) {
+    const email = dto.email.trim().toLowerCase();
+    if (await this.users.exists({ where: { email } }))
+      throw new ConflictException('Ya existe una cuenta con ese correo.');
+    let comunidad: Comunidad | null = null;
+    if (dto.comunidadId) {
+      comunidad = await this.comunidades.findOne({
+        where: { id: dto.comunidadId },
+      });
+      if (!comunidad) throw new BadRequestException('Comunidad no encontrada');
+    }
+    const password = dto.password?.trim() || this.tempPassword();
+    const user = this.users.create({
+      email,
+      fullName: dto.fullName.trim(),
+      displayName: dto.displayName?.trim() || null,
+      password: await bcrypt.hash(password, 10),
+      role: 'user',
+      isActive: true,
+      phoneNumber: dto.phoneNumber?.trim() ?? '',
+      address: '',
+      bio: '',
+      ...(dto.birthDate ? { birthDate: new Date(dto.birthDate) } : {}),
+      comunidad,
+      level: dto.level ?? null,
+      memberStatus:
+        dto.verified && comunidad ? 'verified' : comunidad ? 'pending' : 'none',
+      memberRequestedAt: comunidad ? new Date() : null,
+      memberVerifiedAt: dto.verified && comunidad ? new Date() : null,
+    } as Partial<User>);
+    await this.users.save(user);
+    const saved = await this.users.findOneOrFail({ where: { email } });
+    // La contraseña se devuelve una sola vez para entregarla al joven
+    return {
+      member: memberView(saved),
+      password,
+      generated: !dto.password?.trim(),
+    };
+  }
+
+  async resetPassword(id: string, dto: ResetPasswordAdminDto) {
+    const user = await this.users.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    const password = dto.password?.trim() || this.tempPassword();
+    user.password = await bcrypt.hash(password, 10);
+    // Las sesiones abiertas con la contraseña anterior dejan de valer
+    user.passwordChangedAt = new Date();
+    await this.users.save(user);
+    return { password, generated: !dto.password?.trim() };
   }
 
   async adjust(id: string, dto: AdjustPointsDto, adminId: string) {

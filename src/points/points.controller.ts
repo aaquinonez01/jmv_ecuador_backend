@@ -15,9 +15,11 @@ import { User } from 'src/auth/entities/user';
 import { ValidRoles } from 'src/auth/interfaces/valid-roles.interface';
 import {
   AdjustPointsDto,
+  CreateMemberDto,
   ListMembersDto,
   MemberRequestDto,
   PageDto,
+  ResetPasswordAdminDto,
   ReviewMemberDto,
   UpdateRulesDto,
 } from './dto/points.dto';
@@ -55,6 +57,21 @@ export class PointsController {
   @Auth(ValidRoles.ADMIN)
   members(@Query() q: ListMembersDto) {
     return this.service.listMembers(q);
+  }
+
+  @Post('admin/members')
+  @Auth(ValidRoles.ADMIN)
+  createMember(@Body() dto: CreateMemberDto) {
+    return this.service.createMember(dto);
+  }
+
+  @Post('admin/members/:id/password')
+  @Auth(ValidRoles.ADMIN)
+  resetPassword(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ResetPasswordAdminDto,
+  ) {
+    return this.service.resetPassword(id, dto);
   }
 
   @Patch('admin/members/:id')
