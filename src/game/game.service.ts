@@ -550,10 +550,44 @@ export class GameService {
       return w.id;
     });
     if (joined) return { id: joined, existing: false };
-    const [row]: { id: string }[] = await this.dataSource.query(
-      `INSERT INTO game_matches ("playerAId", mode, "turnUserId") VALUES ($1, 'random', $1) RETURNING id`,
+
+    // Nadie espera: se elige al azar a otro joven registrado (no hace falta ser amigos).
+    // Preferencia: misma sección, jugó hace poco, miembro verificado. Nunca alguien bloqueado
+    // ni con quien ya hay una partida abierta.
+    const [yo]: { level: string | null }[] = await this.dataSource.query(
+      `SELECT level FROM "user" WHERE id = $1`,
       [me],
     );
+    const [rival]: { id: string }[] = await this.dataSource.query(
+      `SELECT u.id FROM "user" u
+       WHERE u.id <> $1 AND u."isActive" = true AND u.role = 'user'
+         AND NOT EXISTS (SELECT 1 FROM friendships f WHERE f.status = 'blocked'
+           AND LEAST(f."requesterId", f."addresseeId") = LEAST(u.id, $1::uuid)
+           AND GREATEST(f."requesterId", f."addresseeId") = GREATEST(u.id, $1::uuid))
+         AND NOT EXISTS (SELECT 1 FROM game_matches o WHERE o.status <> 'finished'
+           AND ((o."playerAId" = u.id AND o."playerBId" = $1) OR (o."playerAId" = $1 AND o."playerBId" = u.id)))
+         AND (SELECT COUNT(*) FROM game_matches g WHERE g.status <> 'finished'
+           AND (g."playerAId" = u.id OR g."playerBId" = u.id)) < ${MAX_ACTIVE_MATCHES}
+       ORDER BY (u.level IS NOT DISTINCT FROM $2) DESC,
+         EXISTS (SELECT 1 FROM game_turns t WHERE t."userId" = u.id AND t."issuedAt" > now() - interval '14 days') DESC,
+         (u."memberStatus" = 'verified') DESC,
+         random()
+       LIMIT 1`,
+      [me, yo?.level ?? null],
+    );
+    if (!rival)
+      throw new BadRequestException(
+        'Todavía no hay otros jóvenes registrados con quien jugar. ¡Invita a tus amigos a la app!',
+      );
+    const [row]: { id: string }[] = await this.dataSource.query(
+      `INSERT INTO game_matches ("playerAId", "playerBId", mode, "turnUserId") VALUES ($1, $2, 'random', $1) RETURNING id`,
+      [me, rival.id],
+    );
+    this.push.notify([rival.id], {
+      title: '¡Te tocó un rival en Gira y Aprende!',
+      body: `${await this.name(me)} empezó una partida contigo al azar.`,
+      data: { screen: `/ruleta/${row.id}` },
+    });
     return { id: row.id, existing: false };
   }
 
