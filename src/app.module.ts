@@ -27,6 +27,8 @@ import { LibraryModule } from './library/library.module';
 import { StatutesModule } from './statutes/statutes.module';
 import { DonationsModule } from './donations/donations.module';
 import { PointsModule } from './points/points.module';
+import { PushModule } from './push/push.module';
+import { FriendsModule } from './friends/friends.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -83,6 +85,8 @@ import { PointsModule } from './points/points.module';
     StatutesModule,
     DonationsModule,
     PointsModule,
+    PushModule,
+    FriendsModule,
   ],
   controllers: [],
   providers: [],

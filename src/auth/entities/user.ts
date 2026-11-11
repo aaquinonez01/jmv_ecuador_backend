@@ -10,6 +10,11 @@ import {
 } from 'typeorm';
 
 @Index('idx_user_comunidad', ['comunidad'])
+@Index('idx_user_member_status', ['memberStatus'])
+@Index('uq_user_friend_code', ['friendCode'], {
+  unique: true,
+  where: '"friendCode" IS NOT NULL',
+})
 @Entity()
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -99,6 +104,10 @@ export class User {
   // Saldo en caché; la verdad está en points_transactions
   @Column({ type: 'int', default: 0 })
   pointsBalance: number;
+
+  // Código para agregarse como amigos (se genera la primera vez)
+  @Column({ type: 'varchar', length: 8, nullable: true })
+  friendCode?: string | null;
 
   @OneToMany(() => Post, (post) => post.user, {
     cascade: true,
