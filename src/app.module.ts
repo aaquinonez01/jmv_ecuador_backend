@@ -29,6 +29,7 @@ import { DonationsModule } from './donations/donations.module';
 import { PointsModule } from './points/points.module';
 import { PushModule } from './push/push.module';
 import { FriendsModule } from './friends/friends.module';
+import { GameModule } from './game/game.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -87,6 +88,7 @@ import { FriendsModule } from './friends/friends.module';
     PointsModule,
     PushModule,
     FriendsModule,
+    GameModule,
   ],
   controllers: [],
   providers: [],

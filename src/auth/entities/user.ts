@@ -109,6 +109,10 @@ export class User {
   @Column({ type: 'varchar', length: 8, nullable: true })
   friendCode?: string | null;
 
+  // Estrellas del juego (no se canjean)
+  @Column({ type: 'int', default: 0 })
+  starsBalance: number;
+
   @OneToMany(() => Post, (post) => post.user, {
     cascade: true,
   })
