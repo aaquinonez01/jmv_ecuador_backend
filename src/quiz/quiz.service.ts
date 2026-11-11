@@ -450,9 +450,11 @@ export class QuizService {
     sessionId: string | undefined,
     roomCode: string,
     socketId?: string,
+    asPlayer = false,
   ) {
     const session = await this.findSessionForJoin(sessionId, roomCode);
-    const isHost = this.isHostUser(session, user.id ?? null);
+    // Quien creó la sala es anfitrión (la maneja desde la web); si entra desde la app, juega
+    const isHost = this.isHostUser(session, user.id ?? null) && !asPlayer;
     if (session.roomCode.toUpperCase() !== roomCode.trim().toUpperCase()) {
       throw new BadRequestException('INVALID_CODE');
     }
@@ -890,11 +892,14 @@ export class QuizService {
     await this.sessionRepository.save(session);
     this.clearSessionRuntime(session.id);
 
-    // Puntos JMV: participación + podio (con tope diario); nunca rompe el cierre
+    // Puntos JMV: participación + podio (con tope diario); nunca rompe el cierre.
+    // El anfitrión puede jugar su propia sala, pero no suma puntos (ve las preguntas).
     const points = await this.pointsService.awardQuizSession(
       session.id,
       session.quiz.title,
-      ordered.map((participant) => ({ userId: participant.user.id! })),
+      ordered
+        .filter((participant) => participant.user.id !== session.host?.id)
+        .map((participant) => ({ userId: participant.user.id! })),
     );
 
     this.emitToSession(session.id, 'session.finished', {

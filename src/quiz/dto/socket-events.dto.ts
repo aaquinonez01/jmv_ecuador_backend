@@ -1,4 +1,10 @@
-import { IsOptional, IsString, IsUUID, Length } from 'class-validator';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Length,
+} from 'class-validator';
 
 export class SessionJoinDto {
   @IsOptional()
@@ -8,6 +14,11 @@ export class SessionJoinDto {
   @IsString()
   @Length(4, 8)
   roomCode!: string;
+
+  /** true desde la app: entra a jugar aunque sea quien creó la sala */
+  @IsOptional()
+  @IsBoolean()
+  asPlayer?: boolean;
 }
 
 export class SessionLeaveDto {

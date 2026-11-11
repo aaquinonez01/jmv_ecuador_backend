@@ -97,6 +97,7 @@ export class QuizGateway
         payload.sessionId,
         payload.roomCode,
         client.id,
+        payload.asPlayer === true,
       );
       const room = this.quizService.getSessionRoom(snapshot.sessionId);
       await client.join(room);
