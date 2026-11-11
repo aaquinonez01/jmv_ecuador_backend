@@ -80,6 +80,26 @@ export class User {
   @Column('text')
   bio: string;
 
+  // ── Miembro de JMV (sección por edad y verificación para canjear puntos) ──
+
+  // 'infancia' | 'prejuvenil' | 'juvenil'
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  level?: string | null;
+
+  // 'none' | 'pending' | 'verified' | 'rejected'
+  @Column({ type: 'varchar', length: 12, default: 'none' })
+  memberStatus: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  memberRequestedAt?: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  memberVerifiedAt?: Date | null;
+
+  // Saldo en caché; la verdad está en points_transactions
+  @Column({ type: 'int', default: 0 })
+  pointsBalance: number;
+
   @OneToMany(() => Post, (post) => post.user, {
     cascade: true,
   })

@@ -26,6 +26,7 @@ import { CalendarDatesModule } from './calendar_dates/calendar-dates.module';
 import { LibraryModule } from './library/library.module';
 import { StatutesModule } from './statutes/statutes.module';
 import { DonationsModule } from './donations/donations.module';
+import { PointsModule } from './points/points.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -81,6 +82,7 @@ import { DonationsModule } from './donations/donations.module';
     LibraryModule,
     StatutesModule,
     DonationsModule,
+    PointsModule,
   ],
   controllers: [],
   providers: [],

@@ -21,6 +21,7 @@ import { QuizSessionAnswer } from './entities/quiz-session-answer.entity';
 import { QuizSessionParticipant } from './entities/quiz-session-participant.entity';
 import { QuizSession } from './entities/quiz-session.entity';
 import { Quiz } from './entities/quiz.entity';
+import { PointsService } from 'src/points/points.service';
 import { QuizSessionStatus } from './interfaces/quiz-session-status.enum';
 
 interface SessionRuntime {
@@ -47,6 +48,7 @@ export class QuizService {
     private readonly participantRepository: Repository<QuizSessionParticipant>,
     @InjectRepository(QuizSessionAnswer)
     private readonly answerRepository: Repository<QuizSessionAnswer>,
+    private readonly pointsService: PointsService,
   ) {}
 
   private readonly logger = new Logger('QuizService');
@@ -888,6 +890,13 @@ export class QuizService {
     await this.sessionRepository.save(session);
     this.clearSessionRuntime(session.id);
 
+    // Puntos JMV: participación + podio (con tope diario); nunca rompe el cierre
+    const points = await this.pointsService.awardQuizSession(
+      session.id,
+      session.quiz.title,
+      ordered.map((participant) => ({ userId: participant.user.id! })),
+    );
+
     this.emitToSession(session.id, 'session.finished', {
       sessionId: session.id,
       winner: winner
@@ -902,6 +911,7 @@ export class QuizService {
         score: participant.totalScore,
         totalResponseMs: participant.totalResponseMs,
         rank: participant.rank,
+        pointsAwarded: points.get(participant.user.id!) ?? 0,
       })),
     });
   }

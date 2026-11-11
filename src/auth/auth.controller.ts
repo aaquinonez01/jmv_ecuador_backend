@@ -78,7 +78,7 @@ export class AuthController {
   }
 
   @Patch('profile')
-  @Auth()
+  @Auth(ValidRoles.ADMIN, ValidRoles.USER)
   @UseInterceptors(FileInterceptor('avatar', multerConfig))
   updateProfile(
     @GetUser() user: User,

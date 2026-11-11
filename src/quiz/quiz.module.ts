@@ -13,11 +13,13 @@ import { QuizSession } from './entities/quiz-session.entity';
 import { Quiz } from './entities/quiz.entity';
 import { QuizGateway } from './quiz.gateway';
 import { QuizService } from './quiz.service';
+import { PointsModule } from 'src/points/points.module';
 
 @Module({
   imports: [
     ConfigModule,
     AuthModule,
+    PointsModule,
     TypeOrmModule.forFeature([
       Quiz,
       QuizQuestion,
