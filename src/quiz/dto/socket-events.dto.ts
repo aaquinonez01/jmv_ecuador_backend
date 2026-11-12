@@ -1,5 +1,6 @@
 import {
   IsBoolean,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -32,6 +33,11 @@ export class SessionHostActionDto {
 }
 
 export class QuestionAnswerDto {
+  /** Ms desde que la pregunta llegó al celular hasta que respondió (lo mide la app) */
+  @IsOptional()
+  @IsNumber()
+  elapsedMs?: number;
+
   @IsUUID()
   sessionId!: string;
 

@@ -63,3 +63,6 @@ npm_letsencrypt/
 
 # PDF de la biblioteca subidos en local
 uploads/
+
+# Prueba de estrés: tokens de las cuentas de prueba
+scripts/stress/.tokens-*.json

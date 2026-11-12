@@ -56,7 +56,7 @@ import { GameModule } from './game/game.module';
       logging: ['error', 'warn'],
       maxQueryExecutionTime: 1000,
       extra: {
-        max: 15,
+        max: 25,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 5000,
       },

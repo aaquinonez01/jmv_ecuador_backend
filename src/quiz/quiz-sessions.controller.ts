@@ -16,6 +16,13 @@ export class QuizSessionsController {
     return this.quizService.findAllSessions(filterDto);
   }
 
+  /** Carga del quiz en vivo: salas, jugadores, respuestas/min y retraso de Node */
+  @Get('metrics')
+  @Auth(ValidRoles.ADMIN)
+  metrics() {
+    return this.quizService.getMetrics();
+  }
+
   @Get('open')
   @Auth(ValidRoles.ADMIN, ValidRoles.USER)
   findOpenSessions() {

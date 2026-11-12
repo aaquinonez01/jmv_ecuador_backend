@@ -24,6 +24,8 @@ import {
 interface SocketWithUser extends Socket {
   data: {
     user?: User;
+    /** Sala a la que se unió (para recuperar la conexión tras un corte breve) */
+    sessionId?: string;
   };
 }
 
@@ -40,6 +42,16 @@ interface JwtPayload {
       'http://localhost:3000',
     ],
     credentials: true,
+  },
+  // Mensajes chicos: comprimirlos gasta más CPU de lo que ahorra
+  perMessageDeflate: false,
+  // Tolerante a redes móviles: una señal débil no se confunde con una desconexión
+  pingInterval: 20_000,
+  pingTimeout: 25_000,
+  // Si el celular pierde la conexión hasta 2 min, vuelve a su sala sin perder mensajes
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000,
+    skipMiddlewares: true,
   },
 })
 export class QuizGateway
@@ -66,9 +78,16 @@ export class QuizGateway
   async handleConnection(client: SocketWithUser) {
     try {
       const { user } = await this.requireSocketUser(client);
-      this.logger.log(
-        `socket conectado id=${client.id} user=${user.id} (${user.fullName})`,
-      );
+      if (client.recovered && client.data.sessionId) {
+        this.quizService.relinkSocket(
+          client.id,
+          client.data.sessionId,
+          user.id!,
+        );
+        this.logger.log(`socket recuperado id=${client.id} user=${user.id}`);
+        return;
+      }
+      this.logger.log(`socket conectado id=${client.id} user=${user.id}`);
     } catch (error) {
       this.logger.warn(`Conexion rechazada: ${(error as Error)?.message}`);
       client.emit('session.error', { code: 'UNAUTHORIZED' });
@@ -101,6 +120,7 @@ export class QuizGateway
       );
       const room = this.quizService.getSessionRoom(snapshot.sessionId);
       await client.join(room);
+      client.data.sessionId = snapshot.sessionId;
       this.logger.log(
         `socket=${client.id} user=${user.id} unido al room ${room} (participants=${snapshot.participants.length})`,
       );
@@ -182,6 +202,7 @@ export class QuizGateway
         payload.sessionId,
         payload.questionId,
         payload.optionId,
+        payload.elapsedMs,
       );
     } catch (error) {
       const code = this.extractErrorCode(error);

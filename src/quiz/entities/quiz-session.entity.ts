@@ -90,9 +90,9 @@ export class QuizSession {
   )
   participants!: QuizSessionParticipant[];
 
+  // Sin eager: las respuestas se consultan aparte, solo cuando hace falta
   @OneToMany(() => QuizSessionAnswer, (answer) => answer.session, {
     cascade: true,
-    eager: true,
   })
   answers?: QuizSessionAnswer[];
 }
