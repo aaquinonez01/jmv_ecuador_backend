@@ -14,6 +14,9 @@
 // Las cuentas de prueba se llaman estres-NNN@prueba.jmvecuador.org. Los tokens se guardan
 // en scripts/stress/.tokens-<host>.json para no tener que iniciar sesión cada vez
 // (el inicio de sesión está limitado a 10 por minuto por IP).
+//
+// Al terminar todas las pruebas: DELETE /api/quiz-sessions/stress-data (admin)
+// borra las cuentas estres-NNN y los quizzes "[PRUEBA DE ESTRÉS]".
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';

@@ -842,6 +842,25 @@ export class QuizService implements OnApplicationBootstrap {
     return this.mapSession(await this.findSessionOrFail(sessionId));
   }
 
+  /** Limpieza de la prueba de estrés: solo cuentas y quizzes con su marca exacta */
+  async removeStressData() {
+    // DELETE dentro de un WITH: postgres devuelve el conteo como un SELECT normal
+    return this.dataSource.transaction(async (manager) => {
+      const [quizzes] = await manager.query<{ n: number }[]>(
+        String.raw`WITH d AS (DELETE FROM "quizzes" WHERE "title" LIKE '[PRUEBA DE ESTRÉS]%' RETURNING 1)
+         SELECT count(*)::int AS n FROM d`,
+      );
+      const [users] = await manager.query<{ n: number }[]>(
+        String.raw`WITH d AS (DELETE FROM "user" WHERE "email" ~ '^estres-[0-9]{3}@prueba\.jmvecuador\.org$' RETURNING 1)
+         SELECT count(*)::int AS n FROM d`,
+      );
+      this.logger.log(
+        `Limpieza de estrés: ${users.n} cuentas y ${quizzes.n} quizzes borrados`,
+      );
+      return { cuentas: users.n, quizzes: quizzes.n };
+    });
+  }
+
   async removeSession(sessionId: string) {
     const session = await this.sessionRepository.findOne({
       where: { id: sessionId },

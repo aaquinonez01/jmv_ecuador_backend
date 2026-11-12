@@ -23,6 +23,16 @@ export class QuizSessionsController {
     return this.quizService.getMetrics();
   }
 
+  /**
+   * Borra lo que deja el simulador de estrés (scripts/stress): las cuentas
+   * estres-NNN@prueba.jmvecuador.org y los quizzes "[PRUEBA DE ESTRÉS]". Nada más.
+   */
+  @Delete('stress-data')
+  @Auth(ValidRoles.ADMIN)
+  removeStressData() {
+    return this.quizService.removeStressData();
+  }
+
   @Get('open')
   @Auth(ValidRoles.ADMIN, ValidRoles.USER)
   findOpenSessions() {
