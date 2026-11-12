@@ -10,7 +10,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { MailModule } from '../mail/mail.module';
 
-const DEFAULT_JWT_EXPIRES_IN_SECONDS = 2 * 60 * 60;
+// La app se usa a diario: la sesión dura 30 días para no pedir el inicio de
+// sesión a cada rato (y no saturar el login en un evento con un solo wifi).
+const DEFAULT_JWT_EXPIRES_IN_SECONDS = 30 * 24 * 60 * 60;
 
 function parseJwtExpiresInToSeconds(value: unknown): number {
   if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
@@ -58,8 +60,10 @@ function parseJwtExpiresInToSeconds(value: unknown): number {
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
+        // SESSION_EXPIRES_IN (p. ej. "30d") reemplaza al antiguo JWT_EXPIRES_IN,
+        // que en producción quedó en 2 horas.
         const expiresIn = parseJwtExpiresInToSeconds(
-          configService.get('JWT_EXPIRES_IN'),
+          configService.get('SESSION_EXPIRES_IN'),
         );
 
         return {

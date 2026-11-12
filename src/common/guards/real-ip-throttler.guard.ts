@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerGuard, type ThrottlerRequest } from '@nestjs/throttler';
 import { timingSafeEqual } from 'crypto';
 import { BlockList, isIPv6 } from 'net';
 import type { Request } from 'express';
@@ -82,5 +82,34 @@ export class RealIpThrottlerGuard extends ThrottlerGuard {
     }
 
     return Promise.resolve(peer);
+  }
+}
+
+/** Veces que se multiplica el límite por IP sola (el salón entero) frente al de IP + correo */
+const SHARED_IP_FACTOR = 30;
+
+/**
+ * Inicio de sesión: el límite normal (10/min) se cuenta por IP + correo, así
+ * frena a quien prueba contraseñas contra una cuenta. Además hay un tope por IP
+ * 30 veces mayor (300/min): en un evento, 150 jóvenes en el mismo wifi salen
+ * con la misma IP pública y deben poder entrar sin esperar.
+ */
+@Injectable()
+export class LoginThrottlerGuard extends RealIpThrottlerGuard {
+  protected async handleRequest(props: ThrottlerRequest): Promise<boolean> {
+    const { req } = this.getRequestResponse(props.context);
+    const ip = await this.getTracker(req as Request);
+    const body = (req as Request).body as { email?: unknown } | undefined;
+    const email =
+      typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
+    await super.handleRequest({
+      ...props,
+      limit: props.limit * SHARED_IP_FACTOR,
+      getTracker: () => Promise.resolve(ip),
+    });
+    return super.handleRequest({
+      ...props,
+      getTracker: () => Promise.resolve(`${ip}|${email}`),
+    });
   }
 }

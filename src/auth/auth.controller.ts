@@ -16,7 +16,10 @@ import { Throttle } from '@nestjs/throttler';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthService, toPublicUser } from './auth.service';
-import { RealIpThrottlerGuard } from 'src/common/guards/real-ip-throttler.guard';
+import {
+  LoginThrottlerGuard,
+  RealIpThrottlerGuard,
+} from 'src/common/guards/real-ip-throttler.guard';
 import { LoginUserDto } from './dto/login-user.dto';
 import { GetUser } from './decorators/get-user.decorator';
 import { User } from './entities/user';
@@ -40,7 +43,7 @@ export class AuthController {
   }
 
   @Post('login')
-  @UseGuards(RealIpThrottlerGuard)
+  @UseGuards(LoginThrottlerGuard)
   loginUser(@Body() loginUserDto: LoginUserDto) {
     return this.authService.loginUser(loginUserDto);
   }
