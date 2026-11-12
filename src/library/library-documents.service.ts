@@ -1,3 +1,4 @@
+import { PushService } from 'src/push/push.service';
 import {
   BadRequestException,
   ConflictException,
@@ -61,7 +62,17 @@ export class LibraryDocumentsService {
     private readonly revalidation: RevalidationService,
     private readonly jwtService: JwtService,
     private readonly jwtStrategy: JwtStrategy,
+    private readonly push: PushService,
   ) {}
+
+  /** Aviso a todos cuando un documento pasa a estar publicado */
+  private announce(doc: LibraryDocument) {
+    this.push.notifyAll({
+      title: '📚 Nuevo en la biblioteca',
+      body: doc.title,
+      data: { screen: '/biblioteca' },
+    });
+  }
 
   private async uniqueSlug(base: string) {
     let candidate = base;
@@ -209,6 +220,7 @@ export class LibraryDocumentsService {
 
       const saved = await this.repository.save(item);
       void this.revalidate(saved.id, saved.slug);
+      if (saved.published) this.announce(saved);
       return toAdminDocument(saved, base);
     } catch (error) {
       if (uploadedCoverId) await this.removeCloudinaryImage(uploadedCoverId);
@@ -361,6 +373,7 @@ export class LibraryDocumentsService {
       const file = files?.file?.[0];
       const cover = files?.cover?.[0];
       const previousSlug = item.slug;
+      const wasPublished = item.published;
 
       if (dto.slug && dto.slug !== item.slug) {
         await this.assertSlugAvailable(dto.slug, item.id);
@@ -434,6 +447,7 @@ export class LibraryDocumentsService {
       }
       if (staleCoverId) await this.removeCloudinaryImage(staleCoverId);
       void this.revalidate(saved.id, previousSlug, saved.slug);
+      if (!wasPublished && saved.published) this.announce(saved);
       return toAdminDocument(saved, base);
     } catch (error) {
       if (uploadedCoverId) await this.removeCloudinaryImage(uploadedCoverId);

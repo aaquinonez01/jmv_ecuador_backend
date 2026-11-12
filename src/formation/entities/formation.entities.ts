@@ -21,7 +21,12 @@ export type FormationAxis = (typeof FORMATION_AXES)[number];
 export const FORMATION_LEVELS = ['infancia', 'prejuvenil', 'juvenil'] as const;
 export type FormationLevel = (typeof FORMATION_LEVELS)[number];
 
-export const REFERENCE_TYPES = ['biblica', 'libro', 'documento', 'otro'] as const;
+export const REFERENCE_TYPES = [
+  'biblica',
+  'libro',
+  'documento',
+  'otro',
+] as const;
 export type ReferenceType = (typeof REFERENCE_TYPES)[number];
 
 export interface TopicReference {
@@ -73,7 +78,12 @@ export class FormationTopic {
   updatedAt: Date;
 }
 
-export const MATERIAL_TYPES = ['pdf', 'diapositivas', 'video', 'enlace'] as const;
+export const MATERIAL_TYPES = [
+  'pdf',
+  'diapositivas',
+  'video',
+  'enlace',
+] as const;
 export type MaterialType = (typeof MATERIAL_TYPES)[number];
 
 export interface TrainingMaterial {
@@ -125,7 +135,13 @@ export class NationalTraining {
   updatedAt: Date;
 }
 
-export const PRAYER_CATEGORIES = ['JMV', 'Marianas', 'Vicencianas', 'Misioneras', 'Para el día'] as const;
+export const PRAYER_CATEGORIES = [
+  'JMV',
+  'Marianas',
+  'Vicencianas',
+  'Misioneras',
+  'Para el día',
+] as const;
 export type PrayerCategory = (typeof PRAYER_CATEGORIES)[number];
 
 @Index('idx_prayers_order', ['published', 'category', 'displayOrder'])

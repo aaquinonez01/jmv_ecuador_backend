@@ -1,3 +1,4 @@
+import { PushModule } from 'src/push/push.module';
 import { Module, OnModuleInit } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '../auth/auth.module';
@@ -20,6 +21,7 @@ import { getLibraryStorageDir } from './storage/library-storage';
     ]),
     AuthModule,
     CommonModule,
+    PushModule,
   ],
   controllers: [LibraryDocumentsController, LibraryCollectionsController],
   providers: [LibraryDocumentsService, LibraryCollectionsService],

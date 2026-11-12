@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { PushService } from 'src/push/push.service';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { removeStoredFile } from 'src/library/storage/library-storage';
@@ -9,16 +14,23 @@ import {
   Prayer,
   TrainingMaterial,
 } from './entities/formation.entities';
-import { UpsertPrayerDto, UpsertTopicDto, UpsertTrainingDto } from './dto/formation.dto';
+import {
+  UpsertPrayerDto,
+  UpsertTopicDto,
+  UpsertTrainingDto,
+} from './dto/formation.dto';
 
 const clean = (s?: string | null) => (s?.trim() ? s.trim() : null);
 
 @Injectable()
 export class FormationService {
   constructor(
-    @InjectRepository(FormationTopic) private readonly topics: Repository<FormationTopic>,
-    @InjectRepository(NationalTraining) private readonly trainings: Repository<NationalTraining>,
+    @InjectRepository(FormationTopic)
+    private readonly topics: Repository<FormationTopic>,
+    @InjectRepository(NationalTraining)
+    private readonly trainings: Repository<NationalTraining>,
     @InjectRepository(Prayer) private readonly prayers: Repository<Prayer>,
+    private readonly push: PushService,
   ) {}
 
   // ── Itinerarios ────────────────────────────────────────────────────────
@@ -31,19 +43,36 @@ export class FormationService {
   }
 
   async findTopic(id: string, admin = false) {
-    const item = await this.topics.findOne({ where: admin ? { id } : { id, published: true } });
+    const item = await this.topics.findOne({
+      where: admin ? { id } : { id, published: true },
+    });
     if (!item) throw new NotFoundException('Itinerario no encontrado');
     return item;
   }
 
-  createTopic(dto: UpsertTopicDto) {
-    return this.topics.save(this.topics.create(this.topicData(dto)));
+  async createTopic(dto: UpsertTopicDto) {
+    const saved = await this.topics.save(
+      this.topics.create(this.topicData(dto)),
+    );
+    if (saved.published) this.announceTopic(saved);
+    return saved;
   }
 
   async updateTopic(id: string, dto: UpsertTopicDto) {
     const item = await this.findTopic(id, true);
+    const wasPublished = item.published;
     Object.assign(item, this.topicData(dto));
-    return this.topics.save(item);
+    const saved = await this.topics.save(item);
+    if (!wasPublished && saved.published) this.announceTopic(saved);
+    return saved;
+  }
+
+  private announceTopic(topic: FormationTopic) {
+    this.push.notifyAll({
+      title: '🧭 Nuevo itinerario de formación',
+      body: topic.title,
+      data: { screen: `/itinerario/${topic.id}` },
+    });
   }
 
   async removeTopic(id: string) {
@@ -81,42 +110,76 @@ export class FormationService {
   }
 
   async findTraining(id: string, admin = false) {
-    const item = await this.trainings.findOne({ where: admin ? { id } : { id, published: true } });
+    const item = await this.trainings.findOne({
+      where: admin ? { id } : { id, published: true },
+    });
     if (!item) throw new NotFoundException('Formación no encontrada');
     return item;
   }
 
-  createTraining(dto: UpsertTrainingDto) {
-    return this.trainings.save(this.trainings.create(this.trainingData(dto)));
+  async createTraining(dto: UpsertTrainingDto) {
+    const saved = await this.trainings.save(
+      this.trainings.create(this.trainingData(dto)),
+    );
+    if (saved.published) this.announceTraining(saved);
+    return saved;
+  }
+
+  private announceTraining(training: NationalTraining) {
+    this.push.notifyAll({
+      title: '🎓 Nueva formación nacional',
+      body: training.title,
+      data: { screen: `/formacion-nacional/${training.id}` },
+    });
   }
 
   async updateTraining(id: string, dto: UpsertTrainingDto) {
     const item = await this.findTraining(id, true);
+    const wasPublished = item.published;
     const before = this.fileNames(item.materials);
     Object.assign(item, this.trainingData(dto));
     const saved = await this.trainings.save(item);
     // PDFs que se quitaron del material: se borran del disco
     const after = new Set(this.fileNames(saved.materials));
-    await Promise.all(before.filter((f) => !after.has(f)).map((f) => removeStoredFile(f).catch(() => undefined)));
+    await Promise.all(
+      before
+        .filter((f) => !after.has(f))
+        .map((f) => removeStoredFile(f).catch(() => undefined)),
+    );
+    if (!wasPublished && saved.published) this.announceTraining(saved);
     return saved;
   }
 
   async removeTraining(id: string) {
     const item = await this.findTraining(id, true);
     await this.trainings.remove(item);
-    await Promise.all(this.fileNames(item.materials).map((f) => removeStoredFile(f).catch(() => undefined)));
+    await Promise.all(
+      this.fileNames(item.materials).map((f) =>
+        removeStoredFile(f).catch(() => undefined),
+      ),
+    );
     return { id };
   }
 
   private fileNames(materials: TrainingMaterial[]) {
-    return materials.map((m) => m.fileName).filter((f): f is string => Boolean(f));
+    return materials
+      .map((m) => m.fileName)
+      .filter((f): f is string => Boolean(f));
   }
 
   private trainingData(dto: UpsertTrainingDto): Partial<NationalTraining> {
     const materials = dto.materials.map((m, i) => {
       const url = clean(m.url) ?? undefined;
-      if (!url && !m.fileName) throw new BadRequestException(`Material ${i + 1}: sube un PDF o pega un enlace`);
-      return { title: m.title.trim(), type: m.type, url: m.fileName ? undefined : url, fileName: m.fileName };
+      if (!url && !m.fileName)
+        throw new BadRequestException(
+          `Material ${i + 1}: sube un PDF o pega un enlace`,
+        );
+      return {
+        title: m.title.trim(),
+        type: m.type,
+        url: m.fileName ? undefined : url,
+        fileName: m.fileName,
+      };
     });
     return {
       title: dto.title.trim(),
@@ -138,8 +201,13 @@ export class FormationService {
       order: { displayOrder: 'ASC', createdAt: 'ASC' },
     });
     // Agrupadas en el orden de las categorías
-    const order = (c: string) => PRAYER_CATEGORIES.indexOf(c as (typeof PRAYER_CATEGORIES)[number]);
-    return items.sort((a, b) => order(a.category) - order(b.category) || a.displayOrder - b.displayOrder);
+    const order = (c: string) =>
+      PRAYER_CATEGORIES.indexOf(c as (typeof PRAYER_CATEGORIES)[number]);
+    return items.sort(
+      (a, b) =>
+        order(a.category) - order(b.category) ||
+        a.displayOrder - b.displayOrder,
+    );
   }
 
   async findPrayer(id: string) {

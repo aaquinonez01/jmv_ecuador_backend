@@ -17,8 +17,15 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { ValidRoles } from 'src/auth/interfaces/valid-roles.interface';
-import { libraryMulterConfig, resolveStoredFile } from 'src/library/storage/library-storage';
-import { UpsertPrayerDto, UpsertTopicDto, UpsertTrainingDto } from './dto/formation.dto';
+import {
+  libraryMulterConfig,
+  resolveStoredFile,
+} from 'src/library/storage/library-storage';
+import {
+  UpsertPrayerDto,
+  UpsertTopicDto,
+  UpsertTrainingDto,
+} from './dto/formation.dto';
 import { FormationService } from './formation.service';
 
 // Formación en la app: itinerarios para los grupos, formaciones nacionales
@@ -66,7 +73,8 @@ export class FormationController {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Cache-Control', 'public, max-age=86400');
     res.sendFile(path, (err) => {
-      if (err && !res.headersSent) res.status(404).json({ message: 'Material no encontrado' });
+      if (err && !res.headersSent)
+        res.status(404).json({ message: 'Material no encontrado' });
     });
   }
 
@@ -77,7 +85,11 @@ export class FormationController {
   @UseInterceptors(FileInterceptor('file', libraryMulterConfig))
   uploadMaterial(@UploadedFile() file?: Express.Multer.File) {
     if (!file) throw new BadRequestException('Adjunta un PDF');
-    return { fileName: file.filename, size: file.size, originalName: file.originalname };
+    return {
+      fileName: file.filename,
+      size: file.size,
+      originalName: file.originalname,
+    };
   }
 
   @Get('admin/topics')
@@ -100,7 +112,10 @@ export class FormationController {
 
   @Patch('admin/topics/:id')
   @Auth(ValidRoles.ADMIN)
-  updateTopic(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpsertTopicDto) {
+  updateTopic(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpsertTopicDto,
+  ) {
     return this.service.updateTopic(id, dto);
   }
 
@@ -130,7 +145,10 @@ export class FormationController {
 
   @Patch('admin/trainings/:id')
   @Auth(ValidRoles.ADMIN)
-  updateTraining(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpsertTrainingDto) {
+  updateTraining(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpsertTrainingDto,
+  ) {
     return this.service.updateTraining(id, dto);
   }
 
@@ -154,7 +172,10 @@ export class FormationController {
 
   @Patch('admin/prayers/:id')
   @Auth(ValidRoles.ADMIN)
-  updatePrayer(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpsertPrayerDto) {
+  updatePrayer(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpsertPrayerDto,
+  ) {
     return this.service.updatePrayer(id, dto);
   }
 

@@ -49,6 +49,21 @@ export class PushService {
     void this.send(userIds, message);
   }
 
+  /** A todos los celulares registrados (novedades: libro o formación nueva) */
+  notifyAll(message: PushMessage) {
+    void this.dataSource
+      .query<{ token: string }[]>(`SELECT token FROM push_tokens`)
+      .then((rows) =>
+        this.sendToTokens(
+          rows.map((r) => r.token),
+          message,
+        ),
+      )
+      .catch((e: Error) =>
+        this.logger.warn(`No se pudo enviar un aviso general: ${e.message}`),
+      );
+  }
+
   async send(userIds: string[], message: PushMessage) {
     if (userIds.length === 0) return;
     try {
@@ -56,7 +71,18 @@ export class PushService {
         `SELECT token FROM push_tokens WHERE "userId" = ANY($1::uuid[])`,
         [userIds],
       );
-      const tokens = rows.map((r) => r.token);
+      await this.sendToTokens(
+        rows.map((r) => r.token),
+        message,
+      );
+    } catch (e) {
+      this.logger.warn(`No se pudo enviar un aviso: ${(e as Error).message}`);
+    }
+  }
+
+  private async sendToTokens(tokens: string[], message: PushMessage) {
+    if (tokens.length === 0) return;
+    try {
       for (let i = 0; i < tokens.length; i += 100) {
         const chunk = tokens.slice(i, i + 100);
         const res = await fetch(EXPO_PUSH_URL, {
@@ -69,6 +95,9 @@ export class PushService {
             chunk.map((to) => ({
               to,
               sound: 'default',
+              // Alta prioridad: se muestra al instante aunque la app esté cerrada
+              priority: 'high',
+              channelId: 'avisos',
               title: message.title,
               body: message.body,
               data: message.data ?? {},
@@ -76,10 +105,20 @@ export class PushService {
           ),
         });
         if (!res.ok) {
-          this.logger.warn(`Expo push respondió ${res.status}`);
+          this.logger.warn(
+            `Expo push respondió ${res.status}: ${(await res.text()).slice(0, 300)}`,
+          );
           continue;
         }
         const { data } = (await res.json()) as { data?: ExpoTicket[] };
+        // Errores de entrega (p. ej. credenciales de Firebase que faltan): al log
+        for (const t of data ?? []) {
+          if (
+            t.status === 'error' &&
+            t.details?.error !== 'DeviceNotRegistered'
+          )
+            this.logger.warn(`Aviso rechazado por Expo: ${JSON.stringify(t)}`);
+        }
         // Celulares que desinstalaron la app: se borran sus tokens
         const dead = (data ?? [])
           .map((t, k) =>
