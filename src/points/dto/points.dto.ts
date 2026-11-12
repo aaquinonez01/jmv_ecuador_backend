@@ -30,8 +30,10 @@ export class MemberRequestDto {
   @IsUUID()
   comunidadId!: string;
 
+  /** Ya no se usa: la sección se calcula con la fecha de nacimiento */
+  @IsOptional()
   @IsIn(MEMBER_LEVELS)
-  level!: string;
+  level?: string;
 }
 
 export class ListMembersDto {

@@ -1,6 +1,7 @@
 import { RegisterUserDto } from './dto/register-user.dto';
 import {
   BadRequestException,
+  HttpException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -137,6 +138,25 @@ export class AuthService {
         address,
         bio,
       } = updateProfileDto;
+      // Comunidad y fecha de nacimiento (de ella sale la sección) solo las cambia el Consejo
+      // cuando ya hay una solicitud en revisión o el miembro está verificado
+      const current = await this.userRepository.findOne({
+        where: { id: userId },
+      });
+      if (current && ['pending', 'verified'].includes(current.memberStatus)) {
+        const sameBirth =
+          !birthDate ||
+          (current.birthDate &&
+            new Date(current.birthDate).toISOString().slice(0, 10) ===
+              new Date(birthDate).toISOString().slice(0, 10));
+        const sameComunidad =
+          !comunidadId || current.comunidad?.id === comunidadId;
+        if (!sameBirth || !sameComunidad) {
+          throw new BadRequestException(
+            'Tu comunidad y tu fecha de nacimiento solo las puede cambiar el Consejo Nacional.',
+          );
+        }
+      }
       const profileData = Object.fromEntries(
         Object.entries({
           fullName,
@@ -313,7 +333,8 @@ export class AuthService {
   }
 
   private handleExceptions(error: unknown): never {
-    if (error instanceof NotFoundException) throw error;
+    // Los avisos con código HTTP (400, 404…) se devuelven tal cual
+    if (error instanceof HttpException) throw error;
     this.logger.error(error);
     if (
       error &&

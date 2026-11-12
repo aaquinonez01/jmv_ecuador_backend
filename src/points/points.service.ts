@@ -11,6 +11,7 @@ import { randomInt } from 'crypto';
 import { Brackets, DataSource, EntityManager, Repository } from 'typeorm';
 import { User } from 'src/auth/entities/user';
 import { Comunidad } from 'src/comunidades/entities/comunidad.entity';
+import { levelFromBirthDate } from './member-level';
 import {
   PointReason,
   PointsRule,
@@ -238,14 +239,25 @@ export class PointsService {
     if (!user) throw new NotFoundException('Usuario no encontrado');
     if (user.memberStatus === 'verified')
       throw new BadRequestException(
-        'Ya eres miembro verificado. Si cambiaste de comunidad, avisa al Consejo.',
+        'Ya eres miembro verificado. Si cambiaste de comunidad, el Consejo lo actualiza.',
+      );
+    // Una sola solicitud a la vez: no se puede cambiar de comunidad mientras se revisa
+    if (user.memberStatus === 'pending')
+      throw new BadRequestException(
+        'Tu solicitud ya está en revisión. Si te equivocaste de comunidad, avisa al Consejo.',
+      );
+    // La sección no se elige: sale de la fecha de nacimiento
+    const level = levelFromBirthDate(user.birthDate);
+    if (!level)
+      throw new BadRequestException(
+        'No pudimos calcular tu sección con tu fecha de nacimiento (JMV es de 9 a 35 años). Pide al Consejo que te registre.',
       );
     const comunidad = await this.comunidades.findOne({
       where: { id: dto.comunidadId },
     });
     if (!comunidad) throw new BadRequestException('Comunidad no encontrada');
     user.comunidad = comunidad;
-    user.level = dto.level;
+    user.level = level;
     user.memberStatus = 'pending';
     user.memberRequestedAt = new Date();
     await this.users.save(user);
