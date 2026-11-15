@@ -18,6 +18,13 @@ export class Testimonial {
   @Column({ type: 'text' })
   quote: string;
 
+  // Testimonio largo (opcional): tiene su propia página en la web
+  @Column({ type: 'text', nullable: true })
+  title?: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  story?: string | null;
+
   @Column({ type: 'int', default: 5 })
   rating: number;
 

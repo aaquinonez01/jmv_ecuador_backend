@@ -40,13 +40,17 @@ export class TestimonialsService {
     return Number.isNaN(parsed) ? defaultValue : parsed;
   }
 
-  private mapTestimonial(item: Testimonial) {
+  /** `withStory`: el texto largo solo viaja en el detalle y en el admin, no en el carrusel */
+  private mapTestimonial(item: Testimonial, withStory = true) {
     return {
       id: item.id,
       name: item.name,
       role: item.role,
       location: item.location,
       quote: item.quote,
+      title: item.title ?? null,
+      hasStory: Boolean(item.story?.trim()),
+      ...(withStory ? { story: item.story ?? null } : {}),
       rating: item.rating,
       imageUrl: item.imageUrl,
       active: item.active,
@@ -68,6 +72,8 @@ export class TestimonialsService {
         role: dto.role,
         location: dto.location,
         quote: dto.quote,
+        title: dto.title?.trim() || null,
+        story: dto.story?.trim() || null,
         rating: this.normalizeNumber(dto.rating, 5),
         imageUrl: imageUrl ?? undefined,
         active: this.normalizeBoolean(dto.active, true),
@@ -82,7 +88,7 @@ export class TestimonialsService {
     }
   }
 
-  async findAll(filterDto: FilterTestimonialsDto) {
+  async findAll(filterDto: FilterTestimonialsDto, withStory = true) {
     try {
       const { limit = 50, offset = 0, active, search } = filterDto;
 
@@ -110,7 +116,7 @@ export class TestimonialsService {
 
       return {
         total,
-        items: items.map((item) => this.mapTestimonial(item)),
+        items: items.map((item) => this.mapTestimonial(item, withStory)),
       };
     } catch (error) {
       this.handleExceptions(error);
@@ -118,11 +124,14 @@ export class TestimonialsService {
   }
 
   async findPublic(filterDto: FilterTestimonialsDto) {
-    return this.findAll({
-      ...filterDto,
-      active: 'true',
-      limit: filterDto.limit || 6,
-    });
+    return this.findAll(
+      {
+        ...filterDto,
+        active: 'true',
+        limit: filterDto.limit || 6,
+      },
+      false,
+    );
   }
 
   async findOne(id: string) {
@@ -154,6 +163,9 @@ export class TestimonialsService {
       testimonial.role = dto.role ?? testimonial.role;
       testimonial.location = dto.location ?? testimonial.location;
       testimonial.quote = dto.quote ?? testimonial.quote;
+      // cadena vacía = quitar el testimonio largo
+      if (dto.title !== undefined) testimonial.title = dto.title.trim() || null;
+      if (dto.story !== undefined) testimonial.story = dto.story.trim() || null;
       testimonial.rating =
         dto.rating !== undefined
           ? this.normalizeNumber(dto.rating, testimonial.rating)
