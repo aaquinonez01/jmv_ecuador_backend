@@ -225,8 +225,9 @@ export class FiestasService {
 
   /** Contenido del día (sin las respuestas correctas) */
   async getDay(slug: string, n: number) {
-    const { day } = await this.openDay(slug, n);
+    const { fiesta, day } = await this.openDay(slug, n);
     return {
+      dailyPrayers: fiesta.dailyPrayers ?? null,
       dayNumber: day.dayNumber,
       label: day.label,
       date: day.date,

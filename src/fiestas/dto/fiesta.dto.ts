@@ -77,6 +77,12 @@ export class UpdateFiestaDto {
   intro?: string | null;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(20000)
+  @Transform(trimOrNull)
+  dailyPrayers?: string | null;
+
+  @IsOptional()
   @IsDateString()
   feastDate?: string;
 

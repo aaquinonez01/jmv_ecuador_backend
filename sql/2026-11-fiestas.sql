@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS "fiestas" (
   "createdAt" timestamp NOT NULL DEFAULT now(),
   "updatedAt" timestamp NOT NULL DEFAULT now()
 );
+ALTER TABLE "fiestas" ADD COLUMN IF NOT EXISTS "dailyPrayers" text;
 CREATE UNIQUE INDEX IF NOT EXISTS "uq_fiestas_slug" ON "fiestas" ("slug");
 
 CREATE TABLE IF NOT EXISTS "fiesta_days" (

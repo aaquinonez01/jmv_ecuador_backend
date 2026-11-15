@@ -56,6 +56,10 @@ export class Fiesta {
   @Column({ type: 'text', nullable: true })
   intro?: string | null;
 
+  /** Oraciones que se rezan todos los días (se muestran en cada día) */
+  @Column({ type: 'text', nullable: true })
+  dailyPrayers?: string | null;
+
   @Column({ type: 'boolean', default: false })
   published!: boolean;
 
