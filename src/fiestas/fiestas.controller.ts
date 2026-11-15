@@ -37,6 +37,7 @@ import {
 import { FiestasService } from './fiestas.service';
 
 const MEMBER = [ValidRoles.ADMIN, ValidRoles.USER] as const;
+const isAdmin = (u: User) => u.role === (ValidRoles.ADMIN as string);
 
 // Fiestas del Año Vicenciano en la web: novena / triduo / día, con preguntas y mural
 @Controller('fiestas')
@@ -64,6 +65,20 @@ export class FiestasController {
     return this.fiestas.getDay(slug, n);
   }
 
+  /** Administradores: abrir cualquier día antes de su fecha para probarlo */
+  @Get(':slug/days/:n/preview')
+  @Auth(ValidRoles.ADMIN)
+  preview(@Param('slug') slug: string, @Param('n', ParseIntPipe) n: number) {
+    return this.fiestas.getDay(slug, n, true);
+  }
+
+  /** Administradores: borrar su propio avance de prueba */
+  @Delete(':slug/me')
+  @Auth(ValidRoles.ADMIN)
+  resetMine(@Param('slug') slug: string, @GetUser() user: User) {
+    return this.fiestas.resetMine(slug, user.id!);
+  }
+
   @Get(':slug/me')
   @Auth(...MEMBER)
   me(@Param('slug') slug: string, @GetUser() user: User) {
@@ -77,7 +92,7 @@ export class FiestasController {
     @Param('n', ParseIntPipe) n: number,
     @GetUser() user: User,
   ) {
-    return this.fiestas.result(slug, n, user.id!);
+    return this.fiestas.result(slug, n, user.id!, isAdmin(user));
   }
 
   @Post(':slug/days/:n/answers')
@@ -90,7 +105,7 @@ export class FiestasController {
     @GetUser() user: User,
     @Body() dto: AnswersDto,
   ) {
-    return this.fiestas.answer(slug, n, user.id!, dto);
+    return this.fiestas.answer(slug, n, user.id!, dto, isAdmin(user));
   }
 
   @Post(':slug/days/:n/purpose')
@@ -100,7 +115,7 @@ export class FiestasController {
     @Param('n', ParseIntPipe) n: number,
     @GetUser() user: User,
   ) {
-    return this.fiestas.purpose(slug, n, user.id!);
+    return this.fiestas.purpose(slug, n, user.id!, isAdmin(user));
   }
 
   @Get(':slug/my-reactions')

@@ -123,13 +123,17 @@ export class FiestasService {
     return day.published ? 'open' : 'soon';
   }
 
-  /** Día abierto y con contenido publicado; si no, error claro */
-  private async openDay(slug: string, n: number) {
+  /**
+   * Día abierto y con contenido publicado; si no, error claro.
+   * `preview`: los administradores pueden abrir cualquier día para probarlo.
+   */
+  private async openDay(slug: string, n: number, preview = false) {
     const fiesta = await this.fiestaBySlug(slug);
     const day = await this.days.findOne({
       where: { fiesta: { id: fiesta.id }, dayNumber: n },
     });
     if (!day) throw new NotFoundException('Este día no existe.');
+    if (preview) return { fiesta, day };
     const state = this.dayState(day, todayEc());
     if (state === 'locked')
       throw new ForbiddenException('Este día todavía no empieza.');
@@ -193,7 +197,7 @@ export class FiestasService {
          FROM fiesta_entries e
          JOIN fiesta_days d ON d.id = e."dayId"
          JOIN "user" u ON u.id = e."userId"
-        WHERE d."fiestaId" = $1`,
+        WHERE d."fiestaId" = $1 AND u.role <> 'admin'`,
       [fiesta.id],
     );
     return {
@@ -224,8 +228,8 @@ export class FiestasService {
   }
 
   /** Contenido del día (sin las respuestas correctas) */
-  async getDay(slug: string, n: number) {
-    const { fiesta, day } = await this.openDay(slug, n);
+  async getDay(slug: string, n: number, preview = false) {
+    const { fiesta, day } = await this.openDay(slug, n, preview);
     return {
       dailyPrayers: fiesta.dailyPrayers ?? null,
       dayNumber: day.dayNumber,
@@ -276,6 +280,7 @@ export class FiestasService {
         id: user.id,
         name: shortName(user.fullName, user.displayName),
         isLead: Boolean(user.isCommunityLead && user.comunidad),
+        isAdmin: user.role === 'admin',
       },
       comunidad: user.comunidad
         ? { id: user.comunidad.id, nombre: user.comunidad.nombre }
@@ -286,8 +291,14 @@ export class FiestasService {
     };
   }
 
-  async answer(slug: string, n: number, userId: string, dto: AnswersDto) {
-    const { fiesta, day } = await this.openDay(slug, n);
+  async answer(
+    slug: string,
+    n: number,
+    userId: string,
+    dto: AnswersDto,
+    preview = false,
+  ) {
+    const { fiesta, day } = await this.openDay(slug, n, preview);
     if (day.questions.length === 0)
       throw new BadRequestException('Este día no tiene preguntas.');
     if (dto.answers.length !== day.questions.length)
@@ -330,7 +341,8 @@ export class FiestasService {
         throw new ConflictException(
           'Ya respondiste las preguntas de este día.',
         );
-      if (earned > 0) {
+      // Las pruebas de los administradores no suman a su saldo
+      if (earned > 0 && !preview) {
         await this.points.award(
           {
             userId,
@@ -347,8 +359,8 @@ export class FiestasService {
     return this.resultView(day, entry);
   }
 
-  async result(slug: string, n: number, userId: string) {
-    const { day } = await this.openDay(slug, n);
+  async result(slug: string, n: number, userId: string, preview = false) {
+    const { day } = await this.openDay(slug, n, preview);
     const entry = await this.entries.findOne({
       where: { day: { id: day.id }, user: { id: userId } },
     });
@@ -358,8 +370,8 @@ export class FiestasService {
     return { answered: true, ...this.resultView(day, entry) };
   }
 
-  async purpose(slug: string, n: number, userId: string) {
-    const { fiesta, day } = await this.openDay(slug, n);
+  async purpose(slug: string, n: number, userId: string, preview = false) {
+    const { fiesta, day } = await this.openDay(slug, n, preview);
     if (!day.purpose)
       throw new BadRequestException('Este día no tiene propósito.');
     const rules = await this.rules();
@@ -379,6 +391,7 @@ export class FiestasService {
         ),
       );
       if (updated.length === 0) return { purposeDone: true, points: 0 };
+      if (preview) return { purposeDone: true, points: rules.proposito };
       await this.points.award(
         {
           userId,
@@ -415,7 +428,7 @@ export class FiestasService {
          JOIN fiesta_days d ON d.id = e."dayId"
          JOIN "user" u ON u.id = e."userId"
          LEFT JOIN comunidades c ON c.id = u."comunidadId"
-        WHERE d."fiestaId" = $1
+        WHERE d."fiestaId" = $1 AND u.role <> 'admin'
         GROUP BY u.id, c.nombre
        HAVING SUM(e.points) > 0
         ORDER BY points DESC, MAX(e."answeredAt") ASC
@@ -436,7 +449,7 @@ export class FiestasService {
            FROM fiesta_entries e
            JOIN fiesta_days d ON d.id = e."dayId"
            JOIN "user" u ON u.id = e."userId"
-          WHERE d."fiestaId" = $1 AND u."comunidadId" IS NOT NULL
+          WHERE d."fiestaId" = $1 AND u."comunidadId" IS NOT NULL AND u.role <> 'admin'
           GROUP BY u."comunidadId"
        ), mural AS (
          SELECT p."comunidadId" AS id, COUNT(DISTINCT p."dayId")::int AS "muralDays"
@@ -482,6 +495,17 @@ export class FiestasService {
       })),
       comunidades,
     };
+  }
+
+  /** Administradores: borra su propio avance para volver a probar desde cero */
+  async resetMine(slug: string, userId: string) {
+    const fiesta = await this.fiestaBySlug(slug);
+    await this.dataSource.query(
+      `DELETE FROM fiesta_entries e USING fiesta_days d
+        WHERE d.id = e."dayId" AND d."fiestaId" = $1 AND e."userId" = $2`,
+      [fiesta.id, userId],
+    );
+    return { reset: true };
   }
 
   // ── Mural ─────────────────────────────────────────────────────────────
