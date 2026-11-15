@@ -109,6 +109,10 @@ export class User {
   @Column({ type: 'varchar', length: 8, nullable: true })
   friendCode?: string | null;
 
+  // Responsable de su comunidad: sube las fotos de las fiestas y elige cómo las viven
+  @Column('bool', { default: false })
+  isCommunityLead?: boolean;
+
   // Estrellas del juego (no se canjean)
   @Column({ type: 'int', default: 0 })
   starsBalance: number;

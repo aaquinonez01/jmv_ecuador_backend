@@ -17,6 +17,8 @@ export const POINT_REASONS = [
   'game',
   'reto',
   'training',
+  'fiesta',
+  'fiesta_proposito',
 ] as const;
 export type PointReason = (typeof POINT_REASONS)[number];
 

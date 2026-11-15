@@ -74,6 +74,10 @@ export class AuthService {
 
       const newUser: User = this.userRepository.create({
         ...userData,
+        // Columnas obligatorias que el registro rápido de la web no pide
+        phoneNumber: userData.phoneNumber ?? '',
+        address: userData.address ?? '',
+        bio: userData.bio ?? '',
         ...(comunidadId ? { comunidad: { id: comunidadId } } : {}),
         password: newPassword,
         role: ValidRoles.USER,

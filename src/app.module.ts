@@ -30,6 +30,7 @@ import { PointsModule } from './points/points.module';
 import { PushModule } from './push/push.module';
 import { FriendsModule } from './friends/friends.module';
 import { GameModule } from './game/game.module';
+import { FiestasModule } from './fiestas/fiestas.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -89,6 +90,7 @@ import { GameModule } from './game/game.module';
     PushModule,
     FriendsModule,
     GameModule,
+    FiestasModule,
   ],
   controllers: [],
   providers: [],

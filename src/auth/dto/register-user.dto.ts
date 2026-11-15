@@ -48,9 +48,10 @@ export class RegisterUserDto {
   @MinLength(3)
   role: string;
 
-  @IsNotEmpty()
+  // Opcional: el registro rápido de la web (fiestas) no lo pide
+  @IsOptional()
   @IsDateString()
-  birthDate: string;
+  birthDate?: string;
 
   @IsNotEmpty()
   @IsString()
