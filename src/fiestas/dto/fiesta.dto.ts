@@ -89,6 +89,10 @@ export class UpdateFiestaDto {
   @IsOptional()
   @IsBoolean()
   published?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  earlyPhotos?: boolean;
 }
 
 export class QuestionDto {

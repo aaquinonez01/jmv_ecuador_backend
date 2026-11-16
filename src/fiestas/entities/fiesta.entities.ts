@@ -63,6 +63,10 @@ export class Fiesta {
   @Column({ type: 'boolean', default: false })
   published!: boolean;
 
+  /** Permite subir fotos antes de que empiecen los días (para probar) */
+  @Column({ type: 'boolean', default: false })
+  earlyPhotos!: boolean;
+
   @OneToMany(() => FiestaDay, (d) => d.fiesta)
   days?: FiestaDay[];
 

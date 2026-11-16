@@ -601,8 +601,8 @@ export class FiestasService {
       where: { fiesta: { id: fiesta.id }, dayNumber: n },
     });
     if (!day) throw new NotFoundException('Este día no existe.');
-    // Los administradores pueden probar la subida antes de que empiece el día
-    if (day.date > todayEc() && user.role !== 'admin')
+    // Antes de que empiece el día solo se sube si el admin activó las pruebas
+    if (day.date > todayEc() && !fiesta.earlyPhotos)
       throw new ForbiddenException('Este día todavía no empieza.');
     if (!files?.length)
       throw new BadRequestException('Elige al menos una foto.');
@@ -687,6 +687,7 @@ export class FiestasService {
       perDay,
       photos,
       maxPhotosPerDay: MAX_PHOTOS_PER_DAY,
+      earlyPhotos: Boolean(fiesta.earlyPhotos),
     };
   }
 
