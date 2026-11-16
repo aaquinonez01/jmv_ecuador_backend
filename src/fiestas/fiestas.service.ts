@@ -640,7 +640,8 @@ export class FiestasService {
         url: u.url,
         publicId: u.publicId,
         caption: caption ?? null,
-        status: 'pending',
+        // Salen directo al mural; un administrador puede quitarlas después
+        status: 'approved',
       }),
     );
     await this.photos.save(rows);
