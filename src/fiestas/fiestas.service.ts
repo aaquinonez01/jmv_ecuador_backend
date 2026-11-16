@@ -18,6 +18,8 @@ import {
 import { PointsService } from 'src/points/points.service';
 import {
   AnswersDto,
+  CreateDayDto,
+  CreateFiestaDto,
   LeadsQueryDto,
   UpdateDayDto,
   UpdateFiestaDto,
@@ -118,6 +120,17 @@ export class FiestasService {
     return fiesta;
   }
 
+  /** Lo que la web necesita para dibujar y nombrar el símbolo de la fiesta */
+  private symbolView(fiesta: Fiesta) {
+    return {
+      kind: fiesta.symbolKind,
+      name: fiesta.symbolName ?? null,
+      image: fiesta.symbolImage ?? null,
+      pieceWord: fiesta.pieceWord ?? null,
+      piecesWord: fiesta.piecesWord ?? null,
+    };
+  }
+
   private dayState(day: FiestaDay, today: string): DayState {
     if (day.date > today) return 'locked';
     return day.published ? 'open' : 'soon';
@@ -207,6 +220,7 @@ export class FiestasService {
       subtitle: fiesta.subtitle ?? null,
       intro: fiesta.intro ?? null,
       feastDate: fiesta.feastDate,
+      symbol: this.symbolView(fiesta),
       today,
       participants,
       comunidades,
@@ -217,6 +231,8 @@ export class FiestasService {
           label: d.label,
           date: d.date,
           piece: d.piece,
+          pieceName: d.pieceName ?? null,
+          layerImage: d.layerImage ?? null,
           state,
           isToday: d.date === today,
           title: state === 'open' ? d.title : null,
@@ -238,6 +254,7 @@ export class FiestasService {
       isToday: day.date === todayEc(),
       title: day.title,
       piece: day.piece,
+      pieceName: day.pieceName ?? null,
       theme: day.theme ?? null,
       prayer: day.prayer ?? null,
       purpose: day.purpose ?? null,
@@ -770,6 +787,111 @@ export class FiestasService {
     Object.assign(fiesta, dto);
     await this.fiestas.save(fiesta);
     return this.adminGet(id);
+  }
+
+  async adminCreate(dto: CreateFiestaDto) {
+    if (await this.fiestas.findOne({ where: { slug: dto.slug } }))
+      throw new ConflictException('Ya hay una fiesta con esa dirección.');
+    const fiesta = await this.fiestas.save(
+      this.fiestas.create({
+        title: dto.title.trim(),
+        slug: dto.slug,
+        feastDate: dto.feastDate,
+        symbolKind: dto.symbolKind,
+        published: false,
+      }),
+    );
+    return this.adminGet(fiesta.id);
+  }
+
+  /** Solo se borra una fiesta en la que nadie ha participado todavía */
+  async adminDelete(id: string) {
+    const fiesta = await this.fiestas.findOne({ where: { id } });
+    if (!fiesta) throw new NotFoundException('No encontramos esta fiesta.');
+    const [{ used }]: { used: number }[] = await this.dataSource.query(
+      `SELECT ((SELECT COUNT(*) FROM fiesta_entries e JOIN fiesta_days d ON d.id = e."dayId" WHERE d."fiestaId" = $1)
+             + (SELECT COUNT(*) FROM fiesta_photos p JOIN fiesta_days d ON d.id = p."dayId" WHERE d."fiestaId" = $1))::int AS used`,
+      [id],
+    );
+    if (used > 0)
+      throw new ConflictException(
+        'Esta fiesta ya tiene respuestas o fotos. Ocúltala en lugar de borrarla.',
+      );
+    await this.fiestas.remove(fiesta);
+    return { id };
+  }
+
+  async adminAddDay(id: string, dto: CreateDayDto) {
+    const fiesta = await this.fiestas.findOne({ where: { id } });
+    if (!fiesta) throw new NotFoundException('No encontramos esta fiesta.');
+    const last = await this.days.findOne({
+      where: { fiesta: { id } },
+      order: { dayNumber: 'DESC' },
+    });
+    await this.days.save(
+      this.days.create({
+        fiesta,
+        dayNumber: (last?.dayNumber ?? 0) + 1,
+        date: dto.date,
+        label: dto.label.trim(),
+        title: '',
+        // Cada día gana su propia parte del símbolo
+        piece:
+          fiesta.symbolKind === 'layers' ? `capa-${randomUUID().slice(0, 8)}` : 'm',
+        questions: [],
+        published: false,
+      }),
+    );
+    return this.adminGet(id);
+  }
+
+  /** Solo se quita un día que nadie ha respondido; los siguientes se renumeran */
+  async adminDeleteDay(dayId: string) {
+    const day = await this.days.findOne({
+      where: { id: dayId },
+      relations: { fiesta: true },
+    });
+    if (!day) throw new NotFoundException('Este día no existe.');
+    const [{ used }]: { used: number }[] = await this.dataSource.query(
+      `SELECT ((SELECT COUNT(*) FROM fiesta_entries WHERE "dayId" = $1)
+             + (SELECT COUNT(*) FROM fiesta_photos WHERE "dayId" = $1))::int AS used`,
+      [dayId],
+    );
+    if (used > 0)
+      throw new ConflictException(
+        'Este día ya tiene respuestas o fotos y no se puede quitar.',
+      );
+    const fiestaId = day.fiesta.id;
+    await this.days.remove(day);
+    const rest = await this.days.find({
+      where: { fiesta: { id: fiestaId } },
+      order: { dayNumber: 'ASC' },
+    });
+    // En orden ascendente nunca chocan dos números
+    for (const [i, d] of rest.entries()) {
+      if (d.dayNumber !== i + 1)
+        await this.days.update({ id: d.id }, { dayNumber: i + 1 });
+    }
+    return this.adminGet(fiestaId);
+  }
+
+  /** Imagen del símbolo (base o capa de un día). Los PNG conservan la transparencia */
+  async adminUploadImage(id: string, file?: Express.Multer.File) {
+    const fiesta = await this.fiestas.findOne({ where: { id } });
+    if (!fiesta) throw new NotFoundException('No encontramos esta fiesta.');
+    if (!file) throw new BadRequestException('Elige una imagen.');
+    try {
+      const { url } = await uploadImageWithPublicId(
+        file,
+        `jmv_ecuador/fiestas/${fiesta.slug}/simbolo`,
+      );
+      return { url };
+    } catch (e) {
+      this.logger.error(`Imagen de símbolo: ${String(e)}`);
+      throw new ServiceUnavailableException(
+        'No se pudo subir la imagen. Inténtalo de nuevo en unos minutos.',
+      );
+    }
   }
 
   async adminUpdateDay(dayId: string, dto: UpdateDayDto) {

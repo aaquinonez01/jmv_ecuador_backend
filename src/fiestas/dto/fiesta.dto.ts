@@ -10,6 +10,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -20,9 +21,11 @@ import {
   FIESTA_MODES,
   PHOTO_STATUS,
   REACTIONS,
+  SYMBOL_KINDS,
   type FiestaMode,
   type PhotoStatus,
   type Reaction,
+  type SymbolKind,
 } from '../entities/fiesta.entities';
 
 const trimOrNull = ({ value }: { value: unknown }) =>
@@ -93,6 +96,65 @@ export class UpdateFiestaDto {
   @IsOptional()
   @IsBoolean()
   earlyPhotos?: boolean;
+
+  @IsOptional()
+  @IsIn(SYMBOL_KINDS)
+  symbolKind?: SymbolKind;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  @Transform(trimOrNull)
+  symbolName?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  @Transform(trimOrNull)
+  symbolImage?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  @Transform(trimOrNull)
+  pieceWord?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  @Transform(trimOrNull)
+  piecesWord?: string | null;
+}
+
+export class CreateFiestaDto {
+  @IsString()
+  @MinLength(3)
+  @MaxLength(120)
+  title!: string;
+
+  /** Va en la dirección: /fiestas/adviento */
+  @Matches(/^[a-z0-9]+(-[a-z0-9]+)*$/, {
+    message: 'La dirección solo lleva minúsculas sin tildes, números y guiones.',
+  })
+  @MinLength(3)
+  @MaxLength(60)
+  slug!: string;
+
+  @IsDateString()
+  feastDate!: string;
+
+  @IsIn(SYMBOL_KINDS)
+  symbolKind!: SymbolKind;
+}
+
+export class CreateDayDto {
+  @IsDateString()
+  date!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(40)
+  label!: string;
 }
 
 export class QuestionDto {
@@ -145,6 +207,18 @@ export class UpdateDayDto {
   @IsString()
   @MaxLength(30)
   piece?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  @Transform(trimOrNull)
+  pieceName?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  @Transform(trimOrNull)
+  layerImage?: string | null;
 
   @IsOptional()
   @IsString()

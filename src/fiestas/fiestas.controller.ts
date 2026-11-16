@@ -10,11 +10,12 @@ import {
   Post,
   Put,
   Query,
+  UploadedFile,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
@@ -24,6 +25,8 @@ import { RealIpThrottlerGuard } from 'src/common/guards/real-ip-throttler.guard'
 import { multerConfig } from 'src/posts/config/multer.config';
 import {
   AnswersDto,
+  CreateDayDto,
+  CreateFiestaDto,
   LeadDto,
   LeadsQueryDto,
   ModeDto,
@@ -187,6 +190,11 @@ export class FiestasAdminController {
     return this.fiestas.adminList();
   }
 
+  @Post()
+  create(@Body() dto: CreateFiestaDto) {
+    return this.fiestas.adminCreate(dto);
+  }
+
   @Get('leads')
   leads(@Query() q: LeadsQueryDto) {
     return this.fiestas.adminLeads(q);
@@ -206,6 +214,11 @@ export class FiestasAdminController {
     @Body() dto: UpdateDayDto,
   ) {
     return this.fiestas.adminUpdateDay(dayId, dto);
+  }
+
+  @Delete('days/:dayId')
+  deleteDay(@Param('dayId', ParseUUIDPipe) dayId: string) {
+    return this.fiestas.adminDeleteDay(dayId);
   }
 
   @Patch('photos/:photoId')
@@ -229,6 +242,25 @@ export class FiestasAdminController {
   @Put(':id')
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateFiestaDto) {
     return this.fiestas.adminUpdate(id, dto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.fiestas.adminDelete(id);
+  }
+
+  @Post(':id/days')
+  addDay(@Param('id', ParseUUIDPipe) id: string, @Body() dto: CreateDayDto) {
+    return this.fiestas.adminAddDay(id, dto);
+  }
+
+  @Post(':id/image')
+  @UseInterceptors(FileInterceptor('image', multerConfig))
+  uploadImage(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.fiestas.adminUploadImage(id, file);
   }
 
   @Get(':id/photos')

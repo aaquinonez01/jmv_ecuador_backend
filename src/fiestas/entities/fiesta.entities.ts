@@ -31,6 +31,14 @@ export type FiestaMode = (typeof FIESTA_MODES)[number];
 export const PHOTO_STATUS = ['pending', 'approved', 'rejected'] as const;
 export type PhotoStatus = (typeof PHOTO_STATUS)[number];
 
+/**
+ * Qué se va armando al completar los días:
+ * - medal: la Medalla Milagrosa dibujada en la web
+ * - layers: una imagen base y, encima, una capa por cada día completado
+ */
+export const SYMBOL_KINDS = ['medal', 'layers'] as const;
+export type SymbolKind = (typeof SYMBOL_KINDS)[number];
+
 export const REACTIONS = ['pray', 'heart', 'fire'] as const;
 export type Reaction = (typeof REACTIONS)[number];
 
@@ -66,6 +74,24 @@ export class Fiesta {
   /** Permite subir fotos antes de que empiecen los días (para probar) */
   @Column({ type: 'boolean', default: false })
   earlyPhotos!: boolean;
+
+  @Column({ type: 'varchar', length: 10, default: 'medal' })
+  symbolKind!: SymbolKind;
+
+  /** Cómo se llama lo que se arma: "Corona de Adviento" */
+  @Column({ type: 'text', nullable: true })
+  symbolName?: string | null;
+
+  /** Imagen base del símbolo (capas): lo que se ve antes de ganar nada */
+  @Column({ type: 'text', nullable: true })
+  symbolImage?: string | null;
+
+  /** Cómo se llama cada parte, en singular y plural: "vela" / "velas" */
+  @Column({ type: 'text', nullable: true })
+  pieceWord?: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  piecesWord?: string | null;
 
   @OneToMany(() => FiestaDay, (d) => d.fiesta)
   days?: FiestaDay[];
@@ -106,6 +132,14 @@ export class FiestaDay {
   /** Pieza de la medalla (o insignia) que se gana al completar el día */
   @Column({ type: 'varchar', length: 30 })
   piece!: string;
+
+  /** Símbolo por capas: nombre de lo que se gana este día ("Primera vela") */
+  @Column({ type: 'text', nullable: true })
+  pieceName?: string | null;
+
+  /** Símbolo por capas: imagen que se suma al completar este día */
+  @Column({ type: 'text', nullable: true })
+  layerImage?: string | null;
 
   @Column({ type: 'text', nullable: true })
   theme?: string | null;
