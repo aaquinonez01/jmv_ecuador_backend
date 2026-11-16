@@ -174,3 +174,56 @@ export class Prayer {
   @UpdateDateColumn({ type: 'timestamp' })
   updatedAt: Date;
 }
+
+export const SONG_CATEGORIES = [
+  'Entrada',
+  'Ofertorio',
+  'Comunión',
+  'Salida',
+  'Partes de la misa',
+  'Marianos',
+  'Vicencianos',
+  'Adoración',
+  'Alabanza',
+] as const;
+export type SongCategory = (typeof SONG_CATEGORIES)[number];
+
+/** Canto del cancionero. La letra puede llevar acordes entre corchetes: [Do]Santo, [Sol]santo */
+@Index('idx_songs_order', ['published', 'category', 'title'])
+@Entity('songs')
+export class Song {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'text' })
+  title: string;
+
+  @Column({ type: 'text', nullable: true })
+  author?: string | null;
+
+  @Column({ type: 'varchar', length: 30 })
+  category: SongCategory;
+
+  @Column({ type: 'text' })
+  lyrics: string;
+
+  /** Tono en el que está escrito (ej.: Do, Lam) */
+  @Column({ type: 'varchar', length: 12, nullable: true })
+  songKey?: string | null;
+
+  /** Enlace para escucharlo (YouTube, Spotify…) */
+  @Column({ type: 'text', nullable: true })
+  videoUrl?: string | null;
+
+  @Column({ type: 'int', default: 0 })
+  displayOrder: number;
+
+  @Column({ type: 'bool', default: true })
+  published: boolean;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
+}

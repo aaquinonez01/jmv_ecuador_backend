@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Res,
   UploadedFile,
   UseInterceptors,
@@ -23,6 +24,7 @@ import {
 } from 'src/library/storage/library-storage';
 import {
   UpsertPrayerDto,
+  UpsertSongDto,
   UpsertTopicDto,
   UpsertTrainingDto,
 } from './dto/formation.dto';
@@ -63,6 +65,17 @@ export class FormationController {
   @Get('prayers')
   prayers() {
     return this.service.findPrayers();
+  }
+
+  @Get('songs')
+  songs() {
+    return this.service.findSongs();
+  }
+
+  /** Evangelio de la misa de hoy (o de ?date=AAAA-MM-DD, cercana a hoy) */
+  @Get('gospel')
+  gospel(@Query('date') date?: string) {
+    return this.service.dailyGospel(date);
   }
 
   /** PDF de material de apoyo (nombre aleatorio generado al subirlo) */
@@ -183,5 +196,32 @@ export class FormationController {
   @Auth(ValidRoles.ADMIN)
   removePrayer(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.removePrayer(id);
+  }
+
+  @Get('admin/songs')
+  @Auth(ValidRoles.ADMIN)
+  adminSongs() {
+    return this.service.findSongs(true);
+  }
+
+  @Post('admin/songs')
+  @Auth(ValidRoles.ADMIN)
+  createSong(@Body() dto: UpsertSongDto) {
+    return this.service.createSong(dto);
+  }
+
+  @Patch('admin/songs/:id')
+  @Auth(ValidRoles.ADMIN)
+  updateSong(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpsertSongDto,
+  ) {
+    return this.service.updateSong(id, dto);
+  }
+
+  @Delete('admin/songs/:id')
+  @Auth(ValidRoles.ADMIN)
+  removeSong(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.removeSong(id);
   }
 }

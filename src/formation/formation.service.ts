@@ -2,7 +2,9 @@ import { PushService } from 'src/push/push.service';
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,24 +14,66 @@ import {
   NationalTraining,
   PRAYER_CATEGORIES,
   Prayer,
+  Song,
   TrainingMaterial,
 } from './entities/formation.entities';
 import {
   UpsertPrayerDto,
+  UpsertSongDto,
   UpsertTopicDto,
   UpsertTrainingDto,
 } from './dto/formation.dto';
 
 const clean = (s?: string | null) => (s?.trim() ? s.trim() : null);
 
+/** Evangelio del día tal como lo entrega la app */
+export interface DailyGospel {
+  date: string;
+  /** Ej.: "Lunes de la 33a semana del Tiempo Ordinario" */
+  liturgy: string;
+  /** Ej.: "Evangelio según San Lucas 18,35-43." */
+  title: string;
+  /** Ej.: "Lc 18,35-43." */
+  reference: string;
+  text: string;
+  /** Traducción bíblica de la que sale el texto */
+  bible: string;
+  credit: string;
+}
+
+const GOSPEL_FEED = 'https://feed.evangelizo.org/v2/reader.php';
+const DAY_MS = 86_400_000;
+/** Hoy en Ecuador (UTC-5), AAAA-MM-DD */
+const todayEc = () => new Date(Date.now() - 5 * 3_600_000).toISOString().slice(0, 10);
+
+/** El feed entrega HTML sencillo: se pasa a texto plano sin tocar las palabras */
+const plain = (html: string) =>
+  html
+    .replace(/<br\s*\/?>(\r?\n)?/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;|&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
 @Injectable()
 export class FormationService {
+  private readonly logger = new Logger(FormationService.name);
+  /** Evangelios ya consultados (uno por fecha), para no pedirlos en cada visita */
+  private readonly gospels = new Map<string, DailyGospel>();
+
   constructor(
     @InjectRepository(FormationTopic)
     private readonly topics: Repository<FormationTopic>,
     @InjectRepository(NationalTraining)
     private readonly trainings: Repository<NationalTraining>,
     @InjectRepository(Prayer) private readonly prayers: Repository<Prayer>,
+    @InjectRepository(Song) private readonly songs: Repository<Song>,
     private readonly push: PushService,
   ) {}
 
@@ -240,5 +284,107 @@ export class FormationService {
       displayOrder: dto.displayOrder ?? 0,
       published: dto.published ?? true,
     };
+  }
+
+  // ── Cantos ─────────────────────────────────────────────────────────────
+
+  findSongs(admin = false) {
+    return this.songs.find({
+      where: admin ? {} : { published: true },
+      order: { title: 'ASC' },
+    });
+  }
+
+  async findSong(id: string) {
+    const item = await this.songs.findOne({ where: { id } });
+    if (!item) throw new NotFoundException('Canto no encontrado');
+    return item;
+  }
+
+  createSong(dto: UpsertSongDto) {
+    return this.songs.save(this.songs.create(this.songData(dto)));
+  }
+
+  async updateSong(id: string, dto: UpsertSongDto) {
+    const item = await this.findSong(id);
+    Object.assign(item, this.songData(dto));
+    return this.songs.save(item);
+  }
+
+  async removeSong(id: string) {
+    await this.songs.remove(await this.findSong(id));
+    return { id };
+  }
+
+  private songData(dto: UpsertSongDto): Partial<Song> {
+    return {
+      title: dto.title.trim(),
+      author: clean(dto.author),
+      category: dto.category,
+      // Se conservan los espacios de cada línea: alinean los acordes
+      lyrics: dto.lyrics.replace(/\r\n/g, '\n').replace(/\s+$/, ''),
+      songKey: clean(dto.songKey),
+      videoUrl: clean(dto.videoUrl),
+      displayOrder: dto.displayOrder ?? 0,
+      published: dto.published ?? true,
+    };
+  }
+
+  // ── Evangelio del día ──────────────────────────────────────────────────
+
+  /**
+   * Evangelio de la misa del día, tomado de Evangelizo (evangeliodeldia.org).
+   * Solo se atienden fechas cercanas a hoy, que son las que el feed publica.
+   */
+  async dailyGospel(date?: string): Promise<DailyGospel> {
+    const today = todayEc();
+    const day = date ?? today;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || Number.isNaN(Date.parse(day)))
+      throw new BadRequestException('Fecha no válida');
+    if (Math.abs(Date.parse(day) - Date.parse(today)) > 14 * DAY_MS)
+      throw new BadRequestException('Solo hay evangelio para fechas cercanas a hoy');
+
+    const cached = this.gospels.get(day);
+    if (cached) return cached;
+
+    const ask = async (params: string) => {
+      const res = await fetch(
+        `${GOSPEL_FEED}?date=${day.replace(/-/g, '')}&lang=SP&${params}`,
+        { signal: AbortSignal.timeout(12_000) },
+      );
+      if (!res.ok) throw new Error(`Evangelizo ${res.status}`);
+      return plain(await res.text());
+    };
+
+    try {
+      const [liturgy, title, reference, body] = await Promise.all([
+        ask('type=liturgic_t'),
+        ask('type=reading_lt&content=GSP'),
+        ask('type=reading_st&content=GSP'),
+        ask('type=reading&content=GSP'),
+      ]);
+      // Al final del texto el feed añade de qué Biblia sale y una invitación a suscribirse
+      const cut = body.search(/\n\s*Extraído de la Biblia/i);
+      const text = (cut >= 0 ? body.slice(0, cut) : body).trim();
+      const bible =
+        /Extraído de la Biblia:\s*([^\n]+?)\.?\s*(\n|$)/i.exec(body)?.[1]?.trim() ?? '';
+      if (text.length < 20) throw new Error('Evangelizo devolvió un texto vacío');
+
+      const gospel: DailyGospel = {
+        date: day,
+        liturgy,
+        title,
+        reference,
+        text,
+        bible,
+        credit: 'evangeliodeldia.org',
+      };
+      if (this.gospels.size > 60) this.gospels.clear();
+      this.gospels.set(day, gospel);
+      return gospel;
+    } catch (e) {
+      this.logger.warn(`No se pudo traer el evangelio de ${day}: ${(e as Error).message}`);
+      throw new ServiceUnavailableException('El evangelio de hoy no está disponible en este momento');
+    }
   }
 }

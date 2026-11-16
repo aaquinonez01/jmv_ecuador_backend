@@ -22,6 +22,7 @@ import {
   MATERIAL_TYPES,
   PRAYER_CATEGORIES,
   REFERENCE_TYPES,
+  SONG_CATEGORIES,
 } from '../entities/formation.entities';
 import type {
   FormationAxis,
@@ -29,6 +30,7 @@ import type {
   MaterialType,
   PrayerCategory,
   ReferenceType,
+  SongCategory,
 } from '../entities/formation.entities';
 
 const URL_OPTS = { require_protocol: true };
@@ -171,6 +173,46 @@ export class UpsertPrayerDto {
   @IsString()
   @MaxLength(200)
   source?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(9999)
+  displayOrder?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  published?: boolean;
+}
+
+export class UpsertSongDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
+  title: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  author?: string;
+
+  @IsIn(SONG_CATEGORIES)
+  category: SongCategory;
+
+  @IsString()
+  @MinLength(5)
+  @MaxLength(12000)
+  lyrics: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(12)
+  songKey?: string;
+
+  @IsOptional()
+  @IsUrl(URL_OPTS)
+  @MaxLength(400)
+  videoUrl?: string;
 
   @IsOptional()
   @IsInt()
