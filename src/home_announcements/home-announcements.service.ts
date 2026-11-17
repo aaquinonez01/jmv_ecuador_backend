@@ -54,6 +54,7 @@ export class HomeAnnouncementsService {
       fechaExpiracion: item.fechaExpiracion,
       displayOrder: item.displayOrder,
       featuredInHome: item.featuredInHome,
+      showAsPopup: item.showAsPopup,
       active: item.active,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
@@ -87,6 +88,7 @@ export class HomeAnnouncementsService {
         imageUrl: imageUrl ?? undefined,
         displayOrder: this.normalizeNumber(dto.displayOrder, count + 1),
         featuredInHome: this.normalizeBoolean(dto.featuredInHome, true),
+        showAsPopup: this.normalizeBoolean(dto.showAsPopup, false),
         active: this.normalizeBoolean(dto.active, true),
       });
 
@@ -178,6 +180,12 @@ export class HomeAnnouncementsService {
         item.featuredInHome = this.normalizeBoolean(
           dto.featuredInHome,
           item.featuredInHome,
+        );
+      }
+      if (dto.showAsPopup !== undefined) {
+        item.showAsPopup = this.normalizeBoolean(
+          dto.showAsPopup,
+          item.showAsPopup,
         );
       }
       if (dto.active !== undefined) {

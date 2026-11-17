@@ -53,5 +53,9 @@ export class CreateHomeAnnouncementDto {
 
   @IsOptional()
   @IsString()
+  showAsPopup?: string;
+
+  @IsOptional()
+  @IsString()
   active?: string;
 }

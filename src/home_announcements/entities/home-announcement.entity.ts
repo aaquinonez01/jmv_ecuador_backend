@@ -53,6 +53,10 @@ export class HomeAnnouncement {
   @Column({ type: 'bool', default: true })
   featuredInHome!: boolean;
 
+  /** Además de la tarjeta, se abre como ventana al entrar a la portada */
+  @Column({ type: 'bool', default: false })
+  showAsPopup!: boolean;
+
   @Column({ type: 'bool', default: true })
   active!: boolean;
 
