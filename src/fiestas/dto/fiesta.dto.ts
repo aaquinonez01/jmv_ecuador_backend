@@ -15,6 +15,7 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import {
@@ -96,6 +97,21 @@ export class UpdateFiestaDto {
   @IsOptional()
   @IsBoolean()
   earlyPhotos?: boolean;
+
+  /** Horario para subir fotos (hora de Ecuador). null = sin horario */
+  @IsOptional()
+  @ValidateIf((o: UpdateFiestaDto) => o.photoStartHour !== null)
+  @IsInt()
+  @Min(0)
+  @Max(23)
+  photoStartHour?: number | null;
+
+  @IsOptional()
+  @ValidateIf((o: UpdateFiestaDto) => o.photoEndHour !== null)
+  @IsInt()
+  @Min(1)
+  @Max(24)
+  photoEndHour?: number | null;
 
   @IsOptional()
   @IsIn(SYMBOL_KINDS)
@@ -254,6 +270,18 @@ export class UpdateDayDto {
   @IsOptional()
   @IsBoolean()
   published?: boolean;
+}
+
+/** Admin: modalidad de una comunidad y permiso especial para subir fotos */
+export class CommunityModeDto {
+  @IsOptional()
+  @IsIn(FIESTA_MODES)
+  mode?: FiestaMode;
+
+  /** true: puede subir fotos fuera del horario durante 24 horas */
+  @IsOptional()
+  @IsBoolean()
+  open?: boolean;
 }
 
 export class PhotoStatusDto {

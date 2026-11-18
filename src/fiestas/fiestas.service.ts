@@ -18,6 +18,7 @@ import {
 import { PointsService } from 'src/points/points.service';
 import {
   AnswersDto,
+  CommunityModeDto,
   CreateDayDto,
   CreateFiestaDto,
   LeadsQueryDto,
@@ -53,6 +54,36 @@ export function todayEc(): string {
     timeZone: 'America/Guayaquil',
   }).format(new Date());
 }
+
+/** Hora actual en Ecuador (0-23) */
+function hourEc(): number {
+  return (
+    Number(
+      new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'America/Guayaquil',
+        hour: '2-digit',
+        hour12: false,
+      }).format(new Date()),
+    ) % 24
+  );
+}
+
+/** 20 → "8 de la noche", 24 → "12 de la noche" */
+function hourLabel(h: number): string {
+  if (h === 0 || h === 24) return '12 de la noche';
+  if (h === 12) return '12 del día';
+  if (h < 12) return `${h} de la mañana`;
+  return h < 19 ? `${h - 12} de la tarde` : `${h - 12} de la noche`;
+}
+
+const MODE_LABEL: Record<FiestaMode, string> = {
+  novena: 'novena',
+  triduo: 'triduo',
+  dia: 'solo el día',
+};
+
+/** Horas que dura el permiso especial que da el administrador */
+const OPEN_HOURS = 24;
 
 /** "Katty María Pérez" → "Katty P." (el ranking es público) */
 function shortName(fullName?: string | null, displayName?: string | null) {
@@ -128,6 +159,76 @@ export class FiestasService {
       image: fiesta.symbolImage ?? null,
       pieceWord: fiesta.pieceWord ?? null,
       piecesWord: fiesta.piecesWord ?? null,
+    };
+  }
+
+  /**
+   * A qué días puede subir fotos una comunidad, y a cuáles en este momento.
+   * - allowed: los días de su modalidad (novena: todos; triduo: los tres antes
+   *   de la fiesta y la fiesta; solo el día: la fiesta).
+   * - open: los que se pueden subir ahora mismo (horario o permiso especial).
+   */
+  private photoRules(
+    fiesta: Fiesta,
+    days: FiestaDay[],
+    row: FiestaCommunityMode | null,
+  ) {
+    const today = todayEc();
+    const sorted = [...days].sort((a, b) => a.dayNumber - b.dayNumber);
+    const found = sorted.findIndex((d) => d.date === fiesta.feastDate);
+    const feastIdx = found >= 0 ? found : sorted.length - 1;
+    // Novena / triduo / solo el día: solo en fiestas con novena
+    const usesModes = fiesta.symbolKind === 'medal';
+    const mode = row?.mode ?? null;
+    const allowed = sorted.filter((_, i) => {
+      if (!usesModes || mode === 'novena') return true;
+      if (mode === 'triduo') return i >= feastIdx - 3;
+      if (mode === 'dia') return i === feastIdx;
+      return false;
+    });
+    const hasHours =
+      fiesta.photoStartHour !== null && fiesta.photoStartHour !== undefined;
+    const from = fiesta.photoStartHour ?? 0;
+    const to = fiesta.photoEndHour ?? 24;
+    const specialUntil =
+      row?.openUntil && row.openUntil.getTime() > Date.now()
+        ? row.openUntil
+        : null;
+    const hour = hourEc();
+
+    let open: FiestaDay[];
+    if (fiesta.earlyPhotos) open = sorted;
+    else if (specialUntil || !hasHours)
+      open = allowed.filter((d) => d.date <= today);
+    else
+      open = allowed.filter(
+        (d) => d.date === today && hour >= from && hour < to,
+      );
+
+    let notice: string | null = null;
+    if (open.length === 0) {
+      const todayDay = sorted.find((d) => d.date === today);
+      const next = allowed.find((d) => d.date > today);
+      const hours = `de ${hourLabel(from)} a ${hourLabel(to)}`;
+      if (usesModes && !mode)
+        notice =
+          'Todavía no registramos si tu comunidad hace novena, triduo o solo el día. Pídele a tu localidad que lo envíe al equipo nacional.';
+      else if (todayDay && allowed.includes(todayDay))
+        notice =
+          hour < from
+            ? `Hoy pueden subir las fotos ${hours}.`
+            : `Las fotos de hoy se subían ${hours}. Si no alcanzaron, escriban al equipo nacional.`;
+      else if (next)
+        notice = `Su comunidad vive la fiesta como ${mode ? MODE_LABEL[mode] : 'grupo'}: suben fotos desde el ${next.label.toLowerCase()}${hasHours ? `, ${hours}` : ''}.`;
+      else notice = 'Ya no hay días abiertos para subir fotos.';
+    }
+    return {
+      usesModes,
+      allowed: allowed.map((d) => d.dayNumber),
+      open: open.map((d) => d.dayNumber),
+      hours: hasHours ? { from, to } : null,
+      specialUntil,
+      notice,
     };
   }
 
@@ -618,9 +719,22 @@ export class FiestasService {
       where: { fiesta: { id: fiesta.id }, dayNumber: n },
     });
     if (!day) throw new NotFoundException('Este día no existe.');
-    // Antes de que empiece el día solo se sube si el admin activó las pruebas
-    if (day.date > todayEc() && !fiesta.earlyPhotos)
-      throw new ForbiddenException('Este día todavía no empieza.');
+    // Solo en los días de su modalidad y dentro del horario (o con permiso del admin)
+    const row = await this.modes.findOne({
+      where: { fiestaId: fiesta.id, comunidadId: user.comunidad.id },
+    });
+    const rules = this.photoRules(
+      fiesta,
+      await this.days.find({ where: { fiesta: { id: fiesta.id } } }),
+      row,
+    );
+    if (!rules.open.includes(day.dayNumber))
+      throw new ForbiddenException(
+        rules.notice ??
+          (rules.allowed.includes(day.dayNumber)
+            ? 'Ahora solo se pueden subir las fotos del día de hoy.'
+            : 'Ese día no corresponde a la modalidad de tu comunidad.'),
+      );
     if (!files?.length)
       throw new BadRequestException('Elige al menos una foto.');
 
@@ -706,18 +820,83 @@ export class FiestasService {
       photos,
       maxPhotosPerDay: MAX_PHOTOS_PER_DAY,
       earlyPhotos: Boolean(fiesta.earlyPhotos),
+      upload: this.photoRules(
+        fiesta,
+        await this.days.find({ where: { fiesta: { id: fiesta.id } } }),
+        mode,
+      ),
     };
   }
 
-  async setMode(slug: string, userId: string, mode: FiestaMode) {
-    const user = await this.requireLead(userId);
-    const fiesta = await this.fiestaBySlug(slug);
-    await this.modes.save({
-      fiestaId: fiesta.id,
-      comunidadId: user.comunidad.id,
-      mode,
+  /** La modalidad ya no la elige el responsable: la registra el equipo nacional */
+  setMode(_slug: string, _userId: string, _mode: FiestaMode): never {
+    throw new ForbiddenException(
+      'La modalidad de cada comunidad la registra el equipo nacional.',
+    );
+  }
+
+  // ── Admin: comunidades ────────────────────────────────────────────────
+
+  /** Comunidades con responsable, modalidad o fotos en esta fiesta */
+  async adminCommunities(id: string) {
+    const rows: {
+      id: string;
+      nombre: string;
+      zona: string | null;
+      leads: string | null;
+      mode: FiestaMode | null;
+      openUntil: Date | null;
+      photoDays: number;
+    }[] = await this.dataSource.query(
+      `SELECT c.id, c.nombre, z.nombre AS zona,
+              (SELECT string_agg(u."fullName", ', ' ORDER BY u."fullName") FROM "user" u
+                WHERE u."comunidadId" = c.id AND u."isCommunityLead") AS leads,
+              m.mode, m."openUntil",
+              (SELECT COUNT(DISTINCT p."dayId")::int FROM fiesta_photos p
+                 JOIN fiesta_days d ON d.id = p."dayId"
+                WHERE d."fiestaId" = $1 AND p."comunidadId" = c.id AND p.status = 'approved') AS "photoDays"
+         FROM comunidades c
+         LEFT JOIN zonas z ON z.id = c."zonaId"
+         LEFT JOIN fiesta_community_modes m ON m."comunidadId" = c.id AND m."fiestaId" = $1
+        WHERE m."comunidadId" IS NOT NULL
+           OR EXISTS (SELECT 1 FROM "user" u WHERE u."comunidadId" = c.id AND u."isCommunityLead")
+        ORDER BY c.nombre`,
+      [id],
+    );
+    const now = Date.now();
+    return rows.map((r) => ({
+      ...r,
+      openUntil:
+        r.openUntil && new Date(r.openUntil).getTime() > now
+          ? r.openUntil
+          : null,
+    }));
+  }
+
+  /** Registra la modalidad de una comunidad o le da permiso para subir fuera del horario */
+  async adminSetCommunity(id: string, comunidadId: string, dto: CommunityModeDto) {
+    const fiesta = await this.fiestas.findOne({ where: { id } });
+    if (!fiesta) throw new NotFoundException('No encontramos esta fiesta.');
+    const row = await this.modes.findOne({
+      where: { fiestaId: id, comunidadId },
     });
-    return { mode };
+    const mode = dto.mode ?? row?.mode;
+    if (!mode)
+      throw new BadRequestException(
+        'Primero elige si la comunidad hace novena, triduo o solo el día.',
+      );
+    await this.modes.save({
+      fiestaId: id,
+      comunidadId,
+      mode,
+      openUntil:
+        dto.open === undefined
+          ? (row?.openUntil ?? null)
+          : dto.open
+            ? new Date(Date.now() + OPEN_HOURS * 3_600_000)
+            : null,
+    });
+    return this.adminCommunities(id);
   }
 
   /** Responsable: retira una foto suya que aún no se aprobó */

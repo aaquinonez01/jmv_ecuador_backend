@@ -75,6 +75,17 @@ export class Fiesta {
   @Column({ type: 'boolean', default: false })
   earlyPhotos!: boolean;
 
+  /**
+   * Horario (hora de Ecuador) en que cada comunidad sube las fotos del día.
+   * Con horario, solo se suben las fotos del día de hoy y dentro de esas horas.
+   * Sin horario (null) se puede subir a cualquier día ya empezado.
+   */
+  @Column({ type: 'smallint', nullable: true })
+  photoStartHour?: number | null;
+
+  @Column({ type: 'smallint', nullable: true })
+  photoEndHour?: number | null;
+
   @Column({ type: 'varchar', length: 10, default: 'medal' })
   symbolKind!: SymbolKind;
 
@@ -264,7 +275,7 @@ export class FiestaPhotoReaction {
   user?: User;
 }
 
-/** Cómo vive la fiesta cada comunidad (lo elige su responsable) */
+/** Cómo vive la fiesta cada comunidad (lo registra el equipo nacional) */
 @Entity('fiesta_community_modes')
 export class FiestaCommunityMode {
   @PrimaryColumn('uuid')
@@ -275,6 +286,10 @@ export class FiestaCommunityMode {
 
   @Column({ type: 'varchar', length: 10 })
   mode!: FiestaMode;
+
+  /** Permiso especial: hasta esta hora puede subir fotos fuera del horario */
+  @Column({ type: 'timestamptz', nullable: true })
+  openUntil?: Date | null;
 
   @ManyToOne(() => Fiesta, { onDelete: 'CASCADE' })
   fiesta?: Fiesta;

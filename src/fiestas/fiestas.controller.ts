@@ -25,6 +25,7 @@ import { RealIpThrottlerGuard } from 'src/common/guards/real-ip-throttler.guard'
 import { multerConfig } from 'src/posts/config/multer.config';
 import {
   AnswersDto,
+  CommunityModeDto,
   CreateDayDto,
   CreateFiestaDto,
   LeadDto,
@@ -247,6 +248,20 @@ export class FiestasAdminController {
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.fiestas.adminDelete(id);
+  }
+
+  @Get(':id/communities')
+  communities(@Param('id', ParseUUIDPipe) id: string) {
+    return this.fiestas.adminCommunities(id);
+  }
+
+  @Put(':id/communities/:comunidadId')
+  setCommunity(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('comunidadId', ParseUUIDPipe) comunidadId: string,
+    @Body() dto: CommunityModeDto,
+  ) {
+    return this.fiestas.adminSetCommunity(id, comunidadId, dto);
   }
 
   @Post(':id/days')
