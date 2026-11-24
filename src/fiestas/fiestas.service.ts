@@ -627,7 +627,99 @@ export class FiestasService {
       `DELETE FROM fiesta_consecrations WHERE "fiestaId" = $1 AND "userId" = $2`,
       [fiesta.id, userId],
     );
+    await this.removeKeepsakeRow(fiesta.id, userId);
     return { reset: true };
+  }
+
+  // ── Día de la fiesta: la foto de recuerdo con la medalla ──────────────
+
+  private async removeKeepsakeRow(fiestaId: string, userId: string) {
+    const rows = returned<{ publicId: string | null }>(
+      await this.dataSource.query(
+        `DELETE FROM fiesta_keepsakes WHERE "fiestaId" = $1 AND "userId" = $2 RETURNING "publicId"`,
+        [fiestaId, userId],
+      ),
+    );
+    for (const r of rows)
+      await deleteImageByPublicId(r.publicId).catch(() => undefined);
+    return rows.length > 0;
+  }
+
+  /** El recuerdo de todos: las fotos de quienes caminaron la novena (público) */
+  async keepsakes(slug: string) {
+    const fiesta = await this.fiestaBySlug(slug);
+    const rows: {
+      userId: string;
+      url: string;
+      fullName: string;
+      displayName: string | null;
+      comunidad: string | null;
+    }[] = await this.dataSource.query(
+      `SELECT k."userId", k.url, u."fullName", u."displayName", c.nombre AS comunidad
+         FROM fiesta_keepsakes k
+         JOIN "user" u ON u.id = k."userId"
+         LEFT JOIN comunidades c ON c.id = u."comunidadId"
+        WHERE k."fiestaId" = $1 AND u.role <> 'admin'
+        ORDER BY k."createdAt" DESC
+        LIMIT 600`,
+      [fiesta.id],
+    );
+    return rows.map((r) => ({
+      userId: r.userId,
+      url: r.url,
+      name: shortName(r.fullName, r.displayName),
+      comunidad: r.comunidad,
+    }));
+  }
+
+  async myKeepsake(slug: string, userId: string) {
+    const fiesta = await this.fiestaBySlug(slug);
+    const rows: { url: string }[] = await this.dataSource.query(
+      `SELECT url FROM fiesta_keepsakes WHERE "fiestaId" = $1 AND "userId" = $2`,
+      [fiesta.id, userId],
+    );
+    return { url: rows[0]?.url ?? null };
+  }
+
+  /** Sube (o cambia) su foto con la medalla. Abre el día de la fiesta; los administradores, antes */
+  async uploadKeepsake(
+    slug: string,
+    userId: string,
+    file: Express.Multer.File | undefined,
+    preview = false,
+  ) {
+    const fiesta = await this.fiestaBySlug(slug);
+    if (!preview && todayEc() < fiesta.feastDate)
+      throw new ForbiddenException('Las fotos de recuerdo se suben el día de la fiesta.');
+    if (!file) throw new BadRequestException('Elige una foto.');
+    let uploaded: { url: string; publicId: string };
+    try {
+      uploaded = await uploadImageWithPublicId(
+        file,
+        `jmv_ecuador/fiestas/${fiesta.slug}/recuerdos`,
+      );
+    } catch (e) {
+      this.logger.error(`Foto de recuerdo: ${String(e)}`);
+      throw new ServiceUnavailableException(
+        'No se pudo subir la foto. Inténtalo de nuevo en unos minutos.',
+      );
+    }
+    await this.removeKeepsakeRow(fiesta.id, userId);
+    await this.dataSource.query(
+      `INSERT INTO fiesta_keepsakes ("fiestaId", "userId", url, "publicId") VALUES ($1, $2, $3, $4)`,
+      [fiesta.id, userId, uploaded.url, uploaded.publicId],
+    );
+    return { url: uploaded.url };
+  }
+
+  async removeMyKeepsake(slug: string, userId: string) {
+    const fiesta = await this.fiestaBySlug(slug);
+    return { deleted: await this.removeKeepsakeRow(fiesta.id, userId) };
+  }
+
+  /** Admin: quita la foto de recuerdo de alguien */
+  async adminRemoveKeepsake(id: string, userId: string) {
+    return { deleted: await this.removeKeepsakeRow(id, userId) };
   }
 
   // ── Día de la fiesta: consagración y cielo ────────────────────────────

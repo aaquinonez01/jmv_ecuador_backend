@@ -78,6 +78,37 @@ export class FiestasController {
     return this.fiestas.consecrate(slug, user.id!, isAdmin(user));
   }
 
+  /** Las fotos de recuerdo de todos (día de la fiesta) */
+  @Get(':slug/recuerdos')
+  keepsakes(@Param('slug') slug: string) {
+    return this.fiestas.keepsakes(slug);
+  }
+
+  @Get(':slug/recuerdo')
+  @Auth(...MEMBER)
+  myKeepsake(@Param('slug') slug: string, @GetUser() user: User) {
+    return this.fiestas.myKeepsake(slug, user.id!);
+  }
+
+  @Post(':slug/recuerdo')
+  @Auth(...MEMBER)
+  @UseGuards(RealIpThrottlerGuard)
+  @Throttle({ default: { limit: 6, ttl: 60_000 } })
+  @UseInterceptors(FileInterceptor('photo', multerConfig))
+  uploadKeepsake(
+    @Param('slug') slug: string,
+    @GetUser() user: User,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.fiestas.uploadKeepsake(slug, user.id!, file, isAdmin(user));
+  }
+
+  @Delete(':slug/recuerdo')
+  @Auth(...MEMBER)
+  removeMyKeepsake(@Param('slug') slug: string, @GetUser() user: User) {
+    return this.fiestas.removeMyKeepsake(slug, user.id!);
+  }
+
   @Get(':slug/photos')
   photos(@Param('slug') slug: string, @Query('day') day?: string) {
     const n = day ? parseInt(day, 10) : undefined;
@@ -263,6 +294,14 @@ export class FiestasAdminController {
   @Put(':id')
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateFiestaDto) {
     return this.fiestas.adminUpdate(id, dto);
+  }
+
+  @Delete(':id/recuerdos/:userId')
+  removeKeepsake(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ) {
+    return this.fiestas.adminRemoveKeepsake(id, userId);
   }
 
   @Delete(':id')
