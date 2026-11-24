@@ -623,7 +623,60 @@ export class FiestasService {
         WHERE d.id = e."dayId" AND d."fiestaId" = $1 AND e."userId" = $2`,
       [fiesta.id, userId],
     );
+    await this.dataSource.query(
+      `DELETE FROM fiesta_consecrations WHERE "fiestaId" = $1 AND "userId" = $2`,
+      [fiesta.id, userId],
+    );
     return { reset: true };
+  }
+
+  // ── Día de la fiesta: consagración y cielo ────────────────────────────
+
+  /**
+   * El cielo de la fiesta: una estrella por cada joven que se consagró,
+   * agrupadas por comunidad. Es público. Los administradores no cuentan.
+   */
+  async sky(slug: string) {
+    const fiesta = await this.fiestaBySlug(slug);
+    const rows: { nombre: string | null; n: number }[] =
+      await this.dataSource.query(
+        `SELECT c.nombre, COUNT(*)::int AS n
+           FROM fiesta_consecrations k
+           JOIN "user" u ON u.id = k."userId"
+           LEFT JOIN comunidades c ON c.id = u."comunidadId"
+          WHERE k."fiestaId" = $1 AND u.role <> 'admin'
+          GROUP BY c.nombre
+          ORDER BY n DESC, c.nombre`,
+        [fiesta.id],
+      );
+    return {
+      total: rows.reduce((a, r) => a + r.n, 0),
+      comunidades: rows.filter((r) => r.nombre).length,
+      stars: rows.map((r) => ({ comunidad: r.nombre, n: r.n })),
+      open: todayEc() >= fiesta.feastDate,
+    };
+  }
+
+  async myConsecration(slug: string, userId: string) {
+    const fiesta = await this.fiestaBySlug(slug);
+    const rows: unknown[] = await this.dataSource.query(
+      `SELECT 1 FROM fiesta_consecrations WHERE "fiestaId" = $1 AND "userId" = $2`,
+      [fiesta.id, userId],
+    );
+    return { done: rows.length > 0 };
+  }
+
+  /** Se consagra (una sola vez). Abre el día de la fiesta; los administradores, antes */
+  async consecrate(slug: string, userId: string, preview = false) {
+    const fiesta = await this.fiestaBySlug(slug);
+    if (!preview && todayEc() < fiesta.feastDate)
+      throw new ForbiddenException('La consagración se abre el día de la fiesta.');
+    await this.dataSource.query(
+      `INSERT INTO fiesta_consecrations ("fiestaId", "userId") VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [fiesta.id, userId],
+    );
+    return { done: true, sky: await this.sky(slug) };
   }
 
   // ── Mural ─────────────────────────────────────────────────────────────

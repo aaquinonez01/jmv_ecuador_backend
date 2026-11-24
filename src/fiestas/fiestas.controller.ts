@@ -58,6 +58,26 @@ export class FiestasController {
     return this.fiestas.ranking(slug);
   }
 
+  /** El cielo del día de la fiesta: quiénes ya se consagraron, por comunidad */
+  @Get(':slug/cielo')
+  sky(@Param('slug') slug: string) {
+    return this.fiestas.sky(slug);
+  }
+
+  @Get(':slug/consagracion')
+  @Auth(...MEMBER)
+  myConsecration(@Param('slug') slug: string, @GetUser() user: User) {
+    return this.fiestas.myConsecration(slug, user.id!);
+  }
+
+  @Post(':slug/consagracion')
+  @Auth(...MEMBER)
+  @UseGuards(RealIpThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  consecrate(@Param('slug') slug: string, @GetUser() user: User) {
+    return this.fiestas.consecrate(slug, user.id!, isAdmin(user));
+  }
+
   @Get(':slug/photos')
   photos(@Param('slug') slug: string, @Query('day') day?: string) {
     const n = day ? parseInt(day, 10) : undefined;
