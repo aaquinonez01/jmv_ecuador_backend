@@ -670,7 +670,7 @@ export class FiestasService {
   async consecrate(slug: string, userId: string, preview = false) {
     const fiesta = await this.fiestaBySlug(slug);
     if (!preview && todayEc() < fiesta.feastDate)
-      throw new ForbiddenException('La consagración se abre el día de la fiesta.');
+      throw new ForbiddenException('Este momento se abre el día de la fiesta.');
     await this.dataSource.query(
       `INSERT INTO fiesta_consecrations ("fiestaId", "userId") VALUES ($1, $2)
        ON CONFLICT DO NOTHING`,
