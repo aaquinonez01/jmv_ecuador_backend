@@ -33,6 +33,7 @@ import {
   toBool,
   toInt,
   toTags,
+  toTextList,
   trimText,
 } from './transforms';
 
@@ -101,6 +102,27 @@ export class CreateLibraryDocumentDto {
     message: 'Cada etiqueta puede tener hasta 40 caracteres',
   })
   tags?: string[];
+
+  @IsOptional()
+  @Transform(toTags)
+  @IsArray({ message: 'Los temas deben ser una lista' })
+  @ArrayMaxSize(12, { message: 'Puedes marcar hasta 12 temas' })
+  @IsString({ each: true })
+  @MaxLength(60, { each: true })
+  themes?: string[];
+
+  @IsOptional()
+  @Transform(toTextList)
+  @IsArray({ message: 'Las preguntas deben ser una lista' })
+  @ArrayMaxSize(6, { message: 'Puedes poner hasta 6 preguntas' })
+  @IsString({ each: true })
+  @MaxLength(160, { each: true, message: 'Cada pregunta puede tener hasta 160 caracteres' })
+  answers?: string[];
+
+  @IsOptional()
+  @Transform(optionalText)
+  @oneOf('El nivel', ['empezar', 'profundizar'] as const)
+  level?: string | null;
 
   @IsOptional()
   @Transform(trimText)

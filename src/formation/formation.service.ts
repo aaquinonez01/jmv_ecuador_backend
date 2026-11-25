@@ -1,6 +1,7 @@
 import { PushService } from 'src/push/push.service';
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -16,12 +17,14 @@ import {
   Prayer,
   Song,
   Teaching,
+  Theme,
   TrainingMaterial,
 } from './entities/formation.entities';
 import {
   UpsertPrayerDto,
   UpsertSongDto,
   UpsertTeachingDto,
+  UpsertThemeDto,
   UpsertTopicDto,
   UpsertTrainingDto,
 } from './dto/formation.dto';
@@ -78,6 +81,7 @@ export class FormationService {
     @InjectRepository(Song) private readonly songs: Repository<Song>,
     @InjectRepository(Teaching)
     private readonly teachings: Repository<Teaching>,
+    @InjectRepository(Theme) private readonly themes: Repository<Theme>,
     private readonly push: PushService,
   ) {}
 
@@ -378,6 +382,54 @@ export class FormationService {
       source: clean(dto.source),
       guide: dto.guide ?? 'pasos',
       icon: clean(dto.icon),
+      displayOrder: dto.displayOrder ?? 0,
+      published: dto.published ?? true,
+    };
+  }
+
+  // ── Temas de formación ("Quiero profundizar en…") ──────────────────────
+
+  findThemes(admin = false) {
+    return this.themes.find({
+      where: admin ? {} : { published: true },
+      order: { displayOrder: 'ASC', name: 'ASC' },
+    });
+  }
+
+  async findTheme(id: string) {
+    const item = await this.themes.findOne({ where: { id } });
+    if (!item) throw new NotFoundException('Tema no encontrado');
+    return item;
+  }
+
+  async createTheme(dto: UpsertThemeDto) {
+    if (await this.themes.findOne({ where: { slug: dto.slug } }))
+      throw new ConflictException('Ya hay un tema con ese identificador.');
+    return this.themes.save(this.themes.create(this.themeData(dto)));
+  }
+
+  async updateTheme(id: string, dto: UpsertThemeDto) {
+    const item = await this.findTheme(id);
+    // El identificador no se cambia: los libros ya etiquetados lo usan
+    Object.assign(item, { ...this.themeData(dto), slug: item.slug });
+    return this.themes.save(item);
+  }
+
+  async removeTheme(id: string) {
+    await this.themes.remove(await this.findTheme(id));
+    return { id };
+  }
+
+  private themeData(dto: UpsertThemeDto): Partial<Theme> {
+    return {
+      slug: dto.slug,
+      name: dto.name.trim(),
+      axis: dto.axis,
+      gameCategory: clean(dto.gameCategory),
+      summary: clean(dto.summary),
+      quotes: (dto.quotes ?? [])
+        .map((x) => ({ kind: x.kind, text: x.text.trim(), reference: x.reference.trim() }))
+        .filter((x) => x.text),
       displayOrder: dto.displayOrder ?? 0,
       published: dto.published ?? true,
     };

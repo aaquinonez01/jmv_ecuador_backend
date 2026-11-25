@@ -294,3 +294,59 @@ export class Teaching {
   @UpdateDateColumn({ type: 'timestamp' })
   updatedAt: Date;
 }
+
+export const THEME_AXES = ['humano', 'cristocentrico', 'mariano', 'vicenciano', 'eclesial'] as const;
+export type ThemeAxis = (typeof THEME_AXES)[number];
+
+/** De dónde viene una cita de "Quiero profundizar en…" */
+export const QUOTE_KINDS = ['biblia', 'iglesia', 'padres', 'vicenciana', 'otro'] as const;
+export type QuoteKind = (typeof QUOTE_KINDS)[number];
+
+export interface ThemeQuote {
+  kind: QuoteKind;
+  text: string;
+  /** Cita o fuente: "Jn 6,35", "Catecismo 1324", "San Vicente de Paúl" */
+  reference: string;
+}
+
+/**
+ * Tema de formación: une las preguntas de Gira y Aprende, los libros de la
+ * biblioteca y las citas para profundizar. Cada tema pertenece a un eje formativo.
+ */
+@Index('uq_themes_slug', ['slug'], { unique: true })
+@Entity('themes')
+export class Theme {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'varchar', length: 60 })
+  slug: string;
+
+  @Column({ type: 'text' })
+  name: string;
+
+  @Column({ type: 'varchar', length: 20 })
+  axis: ThemeAxis;
+
+  /** Categoría de Gira y Aprende a la que corresponde (para sugerir tras fallar preguntas) */
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  gameCategory?: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  summary?: string | null;
+
+  @Column({ type: 'jsonb', default: () => "'[]'" })
+  quotes: ThemeQuote[];
+
+  @Column({ type: 'int', default: 0 })
+  displayOrder: number;
+
+  @Column({ type: 'bool', default: true })
+  published: boolean;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
+}

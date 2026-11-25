@@ -26,6 +26,7 @@ import {
   UpsertPrayerDto,
   UpsertSongDto,
   UpsertTeachingDto,
+  UpsertThemeDto,
   UpsertTopicDto,
   UpsertTrainingDto,
 } from './dto/formation.dto';
@@ -71,6 +72,12 @@ export class FormationController {
   @Get('songs')
   songs() {
     return this.service.findSongs();
+  }
+
+  /** Temas de formación con sus citas para profundizar */
+  @Get('themes')
+  themes() {
+    return this.service.findThemes();
   }
 
   @Get('teachings')
@@ -256,5 +263,32 @@ export class FormationController {
   @Auth(ValidRoles.ADMIN)
   removeTeaching(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.removeTeaching(id);
+  }
+
+  @Get('admin/themes')
+  @Auth(ValidRoles.ADMIN)
+  adminThemes() {
+    return this.service.findThemes(true);
+  }
+
+  @Post('admin/themes')
+  @Auth(ValidRoles.ADMIN)
+  createTheme(@Body() dto: UpsertThemeDto) {
+    return this.service.createTheme(dto);
+  }
+
+  @Patch('admin/themes/:id')
+  @Auth(ValidRoles.ADMIN)
+  updateTheme(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpsertThemeDto,
+  ) {
+    return this.service.updateTheme(id, dto);
+  }
+
+  @Delete('admin/themes/:id')
+  @Auth(ValidRoles.ADMIN)
+  removeTheme(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.removeTheme(id);
   }
 }

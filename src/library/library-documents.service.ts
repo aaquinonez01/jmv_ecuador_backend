@@ -192,6 +192,9 @@ export class LibraryDocumentsService {
         axis: dto.axis ?? null,
         stage: dto.stage ?? 'todos',
         tags: dto.tags ?? [],
+        themes: dto.themes ?? [],
+        answers: dto.answers ?? [],
+        level: dto.level ?? null,
         visibility: dto.visibility ?? 'publico',
         coverUrl: dto.coverUrl ?? null,
         coverPublicId: null,
@@ -408,6 +411,9 @@ export class LibraryDocumentsService {
       if (dto.stage) item.stage = dto.stage;
       if (dto.visibility) item.visibility = dto.visibility;
       if (dto.tags !== undefined) item.tags = dto.tags;
+      if (dto.themes !== undefined) item.themes = dto.themes;
+      if (dto.answers !== undefined) item.answers = dto.answers;
+      if (dto.level !== undefined) item.level = dto.level;
       if (dto.externalUrl !== undefined) item.externalUrl = dto.externalUrl;
       for (const field of OPTIONAL_FIELDS) {
         if (dto[field] !== undefined) {

@@ -48,6 +48,9 @@ export function toPublicDocument(item: LibraryDocument, base: string) {
     axis: item.axis ?? null,
     stage: item.stage,
     tags: item.tags ?? [],
+    themes: item.themes ?? [],
+    answers: item.answers ?? [],
+    level: item.level ?? null,
     visibility: item.visibility,
     coverUrl: item.coverUrl ?? null,
     externalUrl:

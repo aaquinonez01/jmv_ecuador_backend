@@ -23,7 +23,9 @@ import {
   PRAYER_CATEGORIES,
   REFERENCE_TYPES,
   SONG_CATEGORIES,
+  QUOTE_KINDS,
   TEACHING_GUIDES,
+  THEME_AXES,
 } from '../entities/formation.entities';
 import type {
   FormationAxis,
@@ -32,7 +34,9 @@ import type {
   PrayerCategory,
   ReferenceType,
   SongCategory,
+  QuoteKind,
   TeachingGuide,
+  ThemeAxis,
 } from '../entities/formation.entities';
 
 const URL_OPTS = { require_protocol: true };
@@ -283,6 +287,62 @@ export class UpsertTeachingDto {
   @IsString()
   @MaxLength(40)
   icon?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(9999)
+  displayOrder?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  published?: boolean;
+}
+
+export class ThemeQuoteDto {
+  @IsIn(QUOTE_KINDS)
+  kind: QuoteKind;
+
+  @IsString()
+  @MinLength(3)
+  @MaxLength(3000)
+  text: string;
+
+  @IsString()
+  @MaxLength(200)
+  reference: string;
+}
+
+export class UpsertThemeDto {
+  @Matches(/^[a-z0-9]+(-[a-z0-9]+)*$/, { message: 'El identificador solo lleva minúsculas sin tildes, números y guiones.' })
+  @MinLength(2)
+  @MaxLength(60)
+  slug: string;
+
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  name: string;
+
+  @IsIn(THEME_AXES)
+  axis: ThemeAxis;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  gameCategory?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  summary?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(60)
+  @ValidateNested({ each: true })
+  @Type(() => ThemeQuoteDto)
+  quotes?: ThemeQuoteDto[];
 
   @IsOptional()
   @IsInt()

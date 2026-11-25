@@ -61,6 +61,21 @@ export const toTags = ({ value }: Raw) => {
   return [...seen];
 };
 
+// Lista de frases: conserva mayúsculas y orden (para "este libro responde a…")
+export const toTextList = ({ value }: Raw) => {
+  const list = Array.isArray(value)
+    ? (value as unknown[])
+    : typeof value === 'string'
+      ? value.trim().startsWith('[')
+        ? (parseList(value) as unknown)
+        : value.split('\n')
+      : value;
+  if (!Array.isArray(list)) return list;
+  return (list as unknown[])
+    .map((x) => (typeof x === 'string' ? x.trim() : x))
+    .filter((x) => x !== '');
+};
+
 // Igual que toTags pero conserva el orden y no cambia mayúsculas (ids)
 export const toIdList = ({ value }: Raw) => {
   const list = parseList(value);

@@ -83,6 +83,18 @@ export class LibraryDocument {
   @Column({ type: 'text', array: true, default: '{}' })
   tags!: string[];
 
+  /** Temas de formación de los que trata (identificadores de la tabla themes) */
+  @Column({ type: 'text', array: true, default: '{}' })
+  themes!: string[];
+
+  /** Preguntas que un joven se haría y que este libro responde */
+  @Column({ type: 'text', array: true, default: '{}' })
+  answers!: string[];
+
+  /** Para quién es: 'empezar' o 'profundizar' */
+  @Column({ type: 'varchar', length: 12, nullable: true })
+  level?: string | null;
+
   @Column({ type: 'varchar', length: 10, default: 'publico' })
   visibility!: LibraryVisibility;
 

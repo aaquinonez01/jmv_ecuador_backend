@@ -7,6 +7,7 @@ import {
   Prayer,
   Song,
   Teaching,
+  Theme,
 } from './entities/formation.entities';
 import { FormationController } from './formation.controller';
 import { FormationService } from './formation.service';
@@ -19,6 +20,7 @@ import { FormationService } from './formation.service';
       Prayer,
       Song,
       Teaching,
+      Theme,
     ]),
     PushModule,
   ],
