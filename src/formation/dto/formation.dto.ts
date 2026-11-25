@@ -23,6 +23,7 @@ import {
   PRAYER_CATEGORIES,
   REFERENCE_TYPES,
   SONG_CATEGORIES,
+  TEACHING_GUIDES,
 } from '../entities/formation.entities';
 import type {
   FormationAxis,
@@ -31,6 +32,7 @@ import type {
   PrayerCategory,
   ReferenceType,
   SongCategory,
+  TeachingGuide,
 } from '../entities/formation.entities';
 
 const URL_OPTS = { require_protocol: true };
@@ -213,6 +215,74 @@ export class UpsertSongDto {
   @IsUrl(URL_OPTS)
   @MaxLength(400)
   videoUrl?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(9999)
+  displayOrder?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  published?: boolean;
+}
+
+export class TeachingStepDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(160)
+  title: string;
+
+  @IsString()
+  @MaxLength(6000)
+  text: string;
+}
+
+export class UpsertTeachingDto {
+  @IsString()
+  @MinLength(3)
+  @MaxLength(160)
+  title: string;
+
+  @IsString()
+  @MinLength(10)
+  @MaxLength(4000)
+  summary: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(300, { each: true })
+  needs?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(40)
+  @ValidateNested({ each: true })
+  @Type(() => TeachingStepDto)
+  steps?: TeachingStepDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(40)
+  @ValidateNested({ each: true })
+  @Type(() => TeachingStepDto)
+  groupSteps?: TeachingStepDto[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  source?: string;
+
+  @IsOptional()
+  @IsIn(TEACHING_GUIDES)
+  guide?: TeachingGuide;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  icon?: string;
 
   @IsOptional()
   @IsInt()

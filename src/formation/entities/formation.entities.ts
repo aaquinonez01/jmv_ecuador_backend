@@ -227,3 +227,65 @@ export class Song {
   @UpdateDateColumn({ type: 'timestamp' })
   updatedAt: Date;
 }
+
+/**
+ * Cómo se guía la enseñanza con "Hazlo ahora":
+ * - none: solo se lee
+ * - pasos: un paso por pantalla
+ * - rosario: el rezo guiado del rosario (misterios del día y cuenta de avemarías)
+ */
+export const TEACHING_GUIDES = ['none', 'pasos', 'rosario'] as const;
+export type TeachingGuide = (typeof TEACHING_GUIDES)[number];
+
+export interface TeachingStep {
+  title: string;
+  text: string;
+}
+
+/** Enseñanza práctica de "¿Qué quieres aprender hoy?": qué es, qué necesitas y los pasos */
+@Index('idx_teachings_order', ['published', 'displayOrder'])
+@Entity('teachings')
+export class Teaching {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'text' })
+  title: string;
+
+  /** Qué es, en pocas líneas */
+  @Column({ type: 'text' })
+  summary: string;
+
+  /** Qué se necesita (una cosa por elemento) */
+  @Column({ type: 'jsonb', default: () => "'[]'" })
+  needs: string[];
+
+  @Column({ type: 'jsonb', default: () => "'[]'" })
+  steps: TeachingStep[];
+
+  /** Sugerencias para hacerlo en grupo (para el animador) */
+  @Column({ type: 'jsonb', default: () => "'[]'" })
+  groupSteps: TeachingStep[];
+
+  @Column({ type: 'text', nullable: true })
+  source?: string | null;
+
+  @Column({ type: 'varchar', length: 12, default: 'pasos' })
+  guide: TeachingGuide;
+
+  /** Nombre del icono (Ionicons) que muestra la app */
+  @Column({ type: 'varchar', length: 40, nullable: true })
+  icon?: string | null;
+
+  @Column({ type: 'int', default: 0 })
+  displayOrder: number;
+
+  @Column({ type: 'bool', default: true })
+  published: boolean;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
+}

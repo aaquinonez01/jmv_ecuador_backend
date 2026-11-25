@@ -15,11 +15,13 @@ import {
   PRAYER_CATEGORIES,
   Prayer,
   Song,
+  Teaching,
   TrainingMaterial,
 } from './entities/formation.entities';
 import {
   UpsertPrayerDto,
   UpsertSongDto,
+  UpsertTeachingDto,
   UpsertTopicDto,
   UpsertTrainingDto,
 } from './dto/formation.dto';
@@ -74,6 +76,8 @@ export class FormationService {
     private readonly trainings: Repository<NationalTraining>,
     @InjectRepository(Prayer) private readonly prayers: Repository<Prayer>,
     @InjectRepository(Song) private readonly songs: Repository<Song>,
+    @InjectRepository(Teaching)
+    private readonly teachings: Repository<Teaching>,
     private readonly push: PushService,
   ) {}
 
@@ -325,6 +329,55 @@ export class FormationService {
       lyrics: dto.lyrics.replace(/\r\n/g, '\n').replace(/\s+$/, ''),
       songKey: clean(dto.songKey),
       videoUrl: clean(dto.videoUrl),
+      displayOrder: dto.displayOrder ?? 0,
+      published: dto.published ?? true,
+    };
+  }
+
+  // ── Enseñanzas ("¿Qué quieres aprender hoy?") ──────────────────────────
+
+  findTeachings(admin = false) {
+    return this.teachings.find({
+      where: admin ? {} : { published: true },
+      order: { displayOrder: 'ASC', createdAt: 'ASC' },
+    });
+  }
+
+  async findTeaching(id: string) {
+    const item = await this.teachings.findOne({ where: { id } });
+    if (!item) throw new NotFoundException('Enseñanza no encontrada');
+    return item;
+  }
+
+  createTeaching(dto: UpsertTeachingDto) {
+    return this.teachings.save(this.teachings.create(this.teachingData(dto)));
+  }
+
+  async updateTeaching(id: string, dto: UpsertTeachingDto) {
+    const item = await this.findTeaching(id);
+    Object.assign(item, this.teachingData(dto));
+    return this.teachings.save(item);
+  }
+
+  async removeTeaching(id: string) {
+    await this.teachings.remove(await this.findTeaching(id));
+    return { id };
+  }
+
+  private teachingData(dto: UpsertTeachingDto): Partial<Teaching> {
+    const steps = (list?: { title: string; text: string }[]) =>
+      (list ?? [])
+        .map((s) => ({ title: s.title.trim(), text: s.text.trim() }))
+        .filter((s) => s.title);
+    return {
+      title: dto.title.trim(),
+      summary: dto.summary.trim(),
+      needs: (dto.needs ?? []).map((n) => n.trim()).filter(Boolean),
+      steps: steps(dto.steps),
+      groupSteps: steps(dto.groupSteps),
+      source: clean(dto.source),
+      guide: dto.guide ?? 'pasos',
+      icon: clean(dto.icon),
       displayOrder: dto.displayOrder ?? 0,
       published: dto.published ?? true,
     };

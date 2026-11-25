@@ -6,13 +6,20 @@ import {
   NationalTraining,
   Prayer,
   Song,
+  Teaching,
 } from './entities/formation.entities';
 import { FormationController } from './formation.controller';
 import { FormationService } from './formation.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([FormationTopic, NationalTraining, Prayer, Song]),
+    TypeOrmModule.forFeature([
+      FormationTopic,
+      NationalTraining,
+      Prayer,
+      Song,
+      Teaching,
+    ]),
     PushModule,
   ],
   controllers: [FormationController],

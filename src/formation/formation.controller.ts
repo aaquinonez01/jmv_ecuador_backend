@@ -25,6 +25,7 @@ import {
 import {
   UpsertPrayerDto,
   UpsertSongDto,
+  UpsertTeachingDto,
   UpsertTopicDto,
   UpsertTrainingDto,
 } from './dto/formation.dto';
@@ -70,6 +71,11 @@ export class FormationController {
   @Get('songs')
   songs() {
     return this.service.findSongs();
+  }
+
+  @Get('teachings')
+  teachings() {
+    return this.service.findTeachings();
   }
 
   /** Evangelio de la misa de hoy (o de ?date=AAAA-MM-DD, cercana a hoy) */
@@ -223,5 +229,32 @@ export class FormationController {
   @Auth(ValidRoles.ADMIN)
   removeSong(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.removeSong(id);
+  }
+
+  @Get('admin/teachings')
+  @Auth(ValidRoles.ADMIN)
+  adminTeachings() {
+    return this.service.findTeachings(true);
+  }
+
+  @Post('admin/teachings')
+  @Auth(ValidRoles.ADMIN)
+  createTeaching(@Body() dto: UpsertTeachingDto) {
+    return this.service.createTeaching(dto);
+  }
+
+  @Patch('admin/teachings/:id')
+  @Auth(ValidRoles.ADMIN)
+  updateTeaching(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpsertTeachingDto,
+  ) {
+    return this.service.updateTeaching(id, dto);
+  }
+
+  @Delete('admin/teachings/:id')
+  @Auth(ValidRoles.ADMIN)
+  removeTeaching(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.removeTeaching(id);
   }
 }
