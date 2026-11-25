@@ -185,6 +185,11 @@ export const SONG_CATEGORIES = [
   'Vicencianos',
   'Adoración',
   'Alabanza',
+  'Espíritu Santo',
+  'Animación',
+  'Vía crucis',
+  'Villancicos',
+  'Juveniles',
 ] as const;
 export type SongCategory = (typeof SONG_CATEGORIES)[number];
 
