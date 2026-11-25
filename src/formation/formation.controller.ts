@@ -23,6 +23,7 @@ import {
   resolveStoredFile,
 } from 'src/library/storage/library-storage';
 import {
+  UpsertMoodDto,
   UpsertPrayerDto,
   UpsertSongDto,
   UpsertTeachingDto,
@@ -72,6 +73,12 @@ export class FormationController {
   @Get('songs')
   songs() {
     return this.service.findSongs();
+  }
+
+  /** "¿Cómo estás hoy?": estados de ánimo con su palabra */
+  @Get('moods')
+  moods() {
+    return this.service.findMoods();
   }
 
   /** Temas de formación con sus citas para profundizar */
@@ -290,5 +297,32 @@ export class FormationController {
   @Auth(ValidRoles.ADMIN)
   removeTheme(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.removeTheme(id);
+  }
+
+  @Get('admin/moods')
+  @Auth(ValidRoles.ADMIN)
+  adminMoods() {
+    return this.service.findMoods(true);
+  }
+
+  @Post('admin/moods')
+  @Auth(ValidRoles.ADMIN)
+  createMood(@Body() dto: UpsertMoodDto) {
+    return this.service.createMood(dto);
+  }
+
+  @Patch('admin/moods/:id')
+  @Auth(ValidRoles.ADMIN)
+  updateMood(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpsertMoodDto,
+  ) {
+    return this.service.updateMood(id, dto);
+  }
+
+  @Delete('admin/moods/:id')
+  @Auth(ValidRoles.ADMIN)
+  removeMood(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.removeMood(id);
   }
 }

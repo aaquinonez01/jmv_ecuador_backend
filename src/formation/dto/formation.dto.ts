@@ -354,3 +354,40 @@ export class UpsertThemeDto {
   @IsBoolean()
   published?: boolean;
 }
+
+export class UpsertMoodDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(40)
+  name: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  icon?: string;
+
+  @IsString()
+  @MinLength(5)
+  @MaxLength(1500)
+  word: string;
+
+  @IsString()
+  @MinLength(2)
+  @MaxLength(200)
+  reference: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  prayer?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(9999)
+  displayOrder?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  published?: boolean;
+}

@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   FormationTopic,
+  Mood,
   NationalTraining,
   Prayer,
   Song,
@@ -21,6 +22,7 @@ import { FormationService } from './formation.service';
       Song,
       Teaching,
       Theme,
+      Mood,
     ]),
     PushModule,
   ],

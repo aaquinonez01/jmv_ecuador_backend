@@ -12,6 +12,7 @@ import { Repository } from 'typeorm';
 import { removeStoredFile } from 'src/library/storage/library-storage';
 import {
   FormationTopic,
+  Mood,
   NationalTraining,
   PRAYER_CATEGORIES,
   Prayer,
@@ -21,6 +22,7 @@ import {
   TrainingMaterial,
 } from './entities/formation.entities';
 import {
+  UpsertMoodDto,
   UpsertPrayerDto,
   UpsertSongDto,
   UpsertTeachingDto,
@@ -82,6 +84,7 @@ export class FormationService {
     @InjectRepository(Teaching)
     private readonly teachings: Repository<Teaching>,
     @InjectRepository(Theme) private readonly themes: Repository<Theme>,
+    @InjectRepository(Mood) private readonly moods: Repository<Mood>,
     private readonly push: PushService,
   ) {}
 
@@ -430,6 +433,50 @@ export class FormationService {
       quotes: (dto.quotes ?? [])
         .map((x) => ({ kind: x.kind, text: x.text.trim(), reference: x.reference.trim() }))
         .filter((x) => x.text),
+      displayOrder: dto.displayOrder ?? 0,
+      published: dto.published ?? true,
+    };
+  }
+
+  // ── "¿Cómo estás hoy?" ─────────────────────────────────────────────────
+
+  findMoods(admin = false) {
+    return this.moods.find({
+      where: admin ? {} : { published: true },
+      order: { displayOrder: 'ASC', name: 'ASC' },
+    });
+  }
+
+  async findMood(id: string) {
+    const item = await this.moods.findOne({ where: { id } });
+    if (!item) throw new NotFoundException('No encontramos ese estado');
+    return item;
+  }
+
+  async createMood(dto: UpsertMoodDto) {
+    if (await this.moods.findOne({ where: { name: dto.name.trim() } }))
+      throw new ConflictException('Ya existe un estado con ese nombre.');
+    return this.moods.save(this.moods.create(this.moodData(dto)));
+  }
+
+  async updateMood(id: string, dto: UpsertMoodDto) {
+    const item = await this.findMood(id);
+    Object.assign(item, this.moodData(dto));
+    return this.moods.save(item);
+  }
+
+  async removeMood(id: string) {
+    await this.moods.remove(await this.findMood(id));
+    return { id };
+  }
+
+  private moodData(dto: UpsertMoodDto): Partial<Mood> {
+    return {
+      name: dto.name.trim(),
+      icon: clean(dto.icon),
+      word: dto.word.trim(),
+      reference: dto.reference.trim(),
+      prayer: clean(dto.prayer),
       displayOrder: dto.displayOrder ?? 0,
       published: dto.published ?? true,
     };

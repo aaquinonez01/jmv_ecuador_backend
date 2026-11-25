@@ -350,3 +350,41 @@ export class Theme {
   @UpdateDateColumn({ type: 'timestamp' })
   updatedAt: Date;
 }
+
+/** "¿Cómo estás hoy?": un estado de ánimo con una palabra de la Biblia para ese momento */
+@Index('uq_moods_name', ['name'], { unique: true })
+@Entity('moods')
+export class Mood {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'varchar', length: 40 })
+  name: string;
+
+  /** Nombre del icono (Ionicons) */
+  @Column({ type: 'varchar', length: 40, nullable: true })
+  icon?: string | null;
+
+  /** La palabra: un versículo o cita corta */
+  @Column({ type: 'text' })
+  word: string;
+
+  @Column({ type: 'text' })
+  reference: string;
+
+  /** Oración breve para ese momento (opcional) */
+  @Column({ type: 'text', nullable: true })
+  prayer?: string | null;
+
+  @Column({ type: 'int', default: 0 })
+  displayOrder: number;
+
+  @Column({ type: 'bool', default: true })
+  published: boolean;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
+}
