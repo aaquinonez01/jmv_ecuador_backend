@@ -304,8 +304,12 @@ export const QUOTE_KINDS = ['biblia', 'iglesia', 'padres', 'vicenciana', 'profes
 export type QuoteKind = (typeof QUOTE_KINDS)[number];
 
 export interface ThemeQuote {
+  /** Identificador corto ("c1") para que los pasos del recorrido la señalen */
+  id?: string;
   kind: QuoteKind;
   text: string;
+  /** Explicación breve de la cita (no es parte de la cita) */
+  context?: string;
   /** Cita o fuente: "Jn 6,35", "Catecismo 1324", "San Vicente de Paúl" */
   reference: string;
 }
@@ -338,6 +342,14 @@ export class Theme {
 
   @Column({ type: 'jsonb', default: () => "'[]'" })
   quotes: ThemeQuote[];
+
+  /**
+   * Recorrido para profundizar: introducción, pasos (idea, citas, pregunta, ejercicio y
+   * por dónde seguir), pasajes para leer, personas para conocer, libros, gesto de la
+   * semana y preguntas para el grupo. La app lo dibuja; aquí se guarda tal cual.
+   */
+  @Column({ type: 'jsonb', nullable: true })
+  journey?: Record<string, unknown> | null;
 
   @Column({ type: 'int', default: 0 })
   displayOrder: number;

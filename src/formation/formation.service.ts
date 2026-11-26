@@ -431,8 +431,16 @@ export class FormationService {
       gameCategory: clean(dto.gameCategory),
       summary: clean(dto.summary),
       quotes: (dto.quotes ?? [])
-        .map((x) => ({ kind: x.kind, text: x.text.trim(), reference: x.reference.trim() }))
+        .map((x) => ({
+          ...(x.id?.trim() ? { id: x.id.trim() } : {}),
+          kind: x.kind,
+          text: x.text.trim(),
+          reference: x.reference.trim(),
+          ...(x.context?.trim() ? { context: x.context.trim() } : {}),
+        }))
         .filter((x) => x.text),
+      // Sin recorrido en el envío no se toca el guardado (el formulario del admin no lo edita)
+      ...(dto.journey !== undefined ? { journey: dto.journey } : {}),
       displayOrder: dto.displayOrder ?? 0,
       published: dto.published ?? true,
     };

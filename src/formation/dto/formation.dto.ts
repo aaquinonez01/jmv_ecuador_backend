@@ -6,6 +6,7 @@ import {
   IsDateString,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   IsUrl,
@@ -300,6 +301,16 @@ export class UpsertTeachingDto {
 }
 
 export class ThemeQuoteDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  id?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(800)
+  context?: string;
+
   @IsIn(QUOTE_KINDS)
   kind: QuoteKind;
 
@@ -343,6 +354,11 @@ export class UpsertThemeDto {
   @ValidateNested({ each: true })
   @Type(() => ThemeQuoteDto)
   quotes?: ThemeQuoteDto[];
+
+  /** Recorrido para profundizar; si no se envía, se conserva el que ya tiene el tema */
+  @IsOptional()
+  @IsObject()
+  journey?: Record<string, unknown>;
 
   @IsOptional()
   @IsInt()
