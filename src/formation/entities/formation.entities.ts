@@ -299,7 +299,8 @@ export const THEME_AXES = ['humano', 'cristocentrico', 'mariano', 'vicenciano', 
 export type ThemeAxis = (typeof THEME_AXES)[number];
 
 /** De dónde viene una cita de "Quiero profundizar en…" */
-export const QUOTE_KINDS = ['biblia', 'iglesia', 'padres', 'vicenciana', 'otro'] as const;
+// 'profesional': psicólogos, médicos o acompañantes de inspiración católica (temas del eje humano)
+export const QUOTE_KINDS = ['biblia', 'iglesia', 'padres', 'vicenciana', 'profesional', 'otro'] as const;
 export type QuoteKind = (typeof QUOTE_KINDS)[number];
 
 export interface ThemeQuote {
