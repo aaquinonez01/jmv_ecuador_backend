@@ -263,6 +263,10 @@ export class FiestaPhoto {
   @Column({ type: 'varchar', length: 10, default: 'pending' })
   status!: PhotoStatus;
 
+  /** Elegida por el equipo para el recuerdo de la portada */
+  @Column({ type: 'boolean', default: false })
+  featured!: boolean;
+
   @Column({ type: 'timestamptz', nullable: true })
   reviewedAt?: Date | null;
 

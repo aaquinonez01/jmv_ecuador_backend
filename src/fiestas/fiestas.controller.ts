@@ -31,6 +31,7 @@ import {
   LeadDto,
   LeadsQueryDto,
   ModeDto,
+  PhotoFeaturedDto,
   PhotoStatusDto,
   PhotosQueryDto,
   PhotoUploadDto,
@@ -279,6 +280,14 @@ export class FiestasAdminController {
     @Body() dto: PhotoStatusDto,
   ) {
     return this.fiestas.adminSetPhotoStatus(photoId, dto.status);
+  }
+
+  @Patch('photos/:photoId/featured')
+  photoFeatured(
+    @Param('photoId', ParseUUIDPipe) photoId: string,
+    @Body() dto: PhotoFeaturedDto,
+  ) {
+    return this.fiestas.adminSetPhotoFeatured(photoId, dto.featured);
   }
 
   @Delete('photos/:photoId')

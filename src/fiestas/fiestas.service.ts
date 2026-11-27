@@ -849,10 +849,11 @@ export class FiestasService {
       dayNumber: number;
       label: string;
       comunidad: string;
+      featured: boolean;
       reactions: Record<string, number> | null;
     }[] = await this.dataSource.query(
       `SELECT p.id, p.url, p.caption, p."createdAt", d."dayNumber", d.label,
-              c.nombre AS comunidad,
+              c.nombre AS comunidad, p.featured,
               (SELECT jsonb_object_agg(r.emoji, r.n) FROM (
                  SELECT emoji, COUNT(*)::int AS n FROM fiesta_photo_reactions
                   WHERE "photoId" = p.id GROUP BY emoji) r) AS reactions
@@ -1320,7 +1321,7 @@ export class FiestasService {
       filter = 'AND p.status = $2';
     }
     return this.dataSource.query<unknown[]>(
-      `SELECT p.id, p.url, p.caption, p.status, p."createdAt", d."dayNumber", d.label,
+      `SELECT p.id, p.url, p.caption, p.status, p.featured, p."createdAt", d."dayNumber", d.label,
               c.nombre AS comunidad, u."fullName" AS "uploadedBy"
          FROM fiesta_photos p
          JOIN fiesta_days d ON d.id = p."dayId"
@@ -1340,6 +1341,12 @@ export class FiestasService {
     );
     if (!res.affected) throw new NotFoundException('La foto no existe.');
     return { id: photoId, status };
+  }
+
+  async adminSetPhotoFeatured(photoId: string, featured: boolean) {
+    const res = await this.photos.update({ id: photoId }, { featured });
+    if (!res.affected) throw new NotFoundException('La foto no existe.');
+    return { id: photoId, featured };
   }
 
   async adminDeletePhoto(photoId: string) {

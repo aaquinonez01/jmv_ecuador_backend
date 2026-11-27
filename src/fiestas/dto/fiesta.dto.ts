@@ -308,6 +308,12 @@ export class PhotoStatusDto {
   status!: PhotoStatus;
 }
 
+/** Admin: mostrar o no una foto del mural en el recuerdo de la portada */
+export class PhotoFeaturedDto {
+  @IsBoolean()
+  featured!: boolean;
+}
+
 export class PhotosQueryDto {
   @IsOptional()
   @IsIn(PHOTO_STATUS)
