@@ -47,6 +47,7 @@ const DEFAULT_RULES = {
   fiesta_a_tiempo: 5,
   fiesta_proposito: 5,
   fiesta_mural: 20,
+  fiesta_recuerdo: 10,
 };
 
 /** Fecha de hoy en Ecuador (AAAA-MM-DD) */
@@ -141,6 +142,7 @@ export class FiestasService {
       aTiempo: values.fiesta_a_tiempo ?? DEFAULT_RULES.fiesta_a_tiempo,
       proposito: values.fiesta_proposito ?? DEFAULT_RULES.fiesta_proposito,
       mural: values.fiesta_mural ?? DEFAULT_RULES.fiesta_mural,
+      recuerdo: values.fiesta_recuerdo ?? DEFAULT_RULES.fiesta_recuerdo,
     };
   }
 
@@ -693,16 +695,34 @@ export class FiestasService {
 
   // ── Día de la fiesta: la foto de recuerdo con la medalla ──────────────
 
-  private async removeKeepsakeRow(fiestaId: string, userId: string) {
-    const rows = returned<{ publicId: string | null }>(
+  /**
+   * Quita la foto de recuerdo. `refund`: se le restan los puntos que ganó al subirla
+   * (si la vuelve a subir, los recupera). Al reemplazar la foto no se tocan.
+   */
+  private async removeKeepsakeRow(
+    fiestaId: string,
+    userId: string,
+    refund = true,
+  ) {
+    const rows = returned<{ publicId: string | null; points: number }>(
       await this.dataSource.query(
-        `DELETE FROM fiesta_keepsakes WHERE "fiestaId" = $1 AND "userId" = $2 RETURNING "publicId"`,
+        `DELETE FROM fiesta_keepsakes WHERE "fiestaId" = $1 AND "userId" = $2 RETURNING "publicId", points`,
         [fiestaId, userId],
       ),
     );
     for (const r of rows)
       await deleteImageByPublicId(r.publicId).catch(() => undefined);
-    return rows.length > 0;
+    const points = rows.reduce((a, r) => a + (r.points ?? 0), 0);
+    if (refund && points > 0) {
+      const fiesta = await this.fiestas.findOne({ where: { id: fiestaId } });
+      await this.points.award({
+        userId,
+        amount: -points,
+        reason: 'fiesta',
+        description: `${fiesta?.title ?? 'Fiesta'} · Quitó su foto con la medalla`,
+      });
+    }
+    return { deleted: rows.length > 0, points };
   }
 
   /** El recuerdo de todos: las fotos de quienes caminaron la novena (público) */
@@ -764,22 +784,34 @@ export class FiestasService {
         'No se pudo subir la foto. Inténtalo de nuevo en unos minutos.',
       );
     }
-    await this.removeKeepsakeRow(fiesta.id, userId);
+    // Cambiar la foto por otra conserva los puntos; subirla por primera vez (o tras
+    // haberla borrado) los da. Las pruebas de los administradores no suman.
+    const old = await this.removeKeepsakeRow(fiesta.id, userId, false);
+    let points = old.points;
+    if (points === 0 && !preview) {
+      const rules = await this.rules();
+      points = await this.points.award({
+        userId,
+        amount: rules.recuerdo,
+        reason: 'fiesta',
+        description: `${fiesta.title} · Foto con la medalla`,
+      });
+    }
     await this.dataSource.query(
-      `INSERT INTO fiesta_keepsakes ("fiestaId", "userId", url, "publicId") VALUES ($1, $2, $3, $4)`,
-      [fiesta.id, userId, uploaded.url, uploaded.publicId],
+      `INSERT INTO fiesta_keepsakes ("fiestaId", "userId", url, "publicId", points) VALUES ($1, $2, $3, $4, $5)`,
+      [fiesta.id, userId, uploaded.url, uploaded.publicId, points],
     );
-    return { url: uploaded.url };
+    return { url: uploaded.url, points };
   }
 
   async removeMyKeepsake(slug: string, userId: string) {
     const fiesta = await this.fiestaBySlug(slug);
-    return { deleted: await this.removeKeepsakeRow(fiesta.id, userId) };
+    return this.removeKeepsakeRow(fiesta.id, userId);
   }
 
   /** Admin: quita la foto de recuerdo de alguien */
   async adminRemoveKeepsake(id: string, userId: string) {
-    return { deleted: await this.removeKeepsakeRow(id, userId) };
+    return this.removeKeepsakeRow(id, userId);
   }
 
   // ── Día de la fiesta: consagración y cielo ────────────────────────────
