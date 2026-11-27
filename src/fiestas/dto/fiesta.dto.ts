@@ -39,6 +39,14 @@ export class AnswersDto {
   @Min(0, { each: true })
   @Max(9, { each: true })
   answers!: number[];
+
+  /** Las preguntas que se respondieron (cuando el día las sortea de un banco) */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  questionIds?: string[];
 }
 
 export class ModeDto {
@@ -197,6 +205,10 @@ export class QuestionDto {
   correctIndex!: number;
 
   @IsOptional()
+  @IsBoolean()
+  retired?: boolean;
+
+  @IsOptional()
   @IsString()
   @MaxLength(600)
   @Transform(trimOrNull)
@@ -262,10 +274,17 @@ export class UpdateDayDto {
 
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(10)
+  @ArrayMaxSize(40)
   @ValidateNested({ each: true })
   @Type(() => QuestionDto)
   questions?: QuestionDto[];
+
+  /** Cuántas le tocan a cada persona (sorteadas); null = todas */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(20)
+  quizSize?: number | null;
 
   @IsOptional()
   @IsBoolean()

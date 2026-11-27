@@ -22,6 +22,8 @@ export interface FiestaQuestion {
   options: string[];
   correctIndex: number;
   explanation?: string | null;
+  /** Retirada: ya no se sortea, pero se conserva para quien la respondió */
+  retired?: boolean;
 }
 
 /** Cómo vive cada comunidad la fiesta en persona */
@@ -168,6 +170,13 @@ export class FiestaDay {
   @Column({ type: 'jsonb', default: () => "'[]'" })
   questions!: FiestaQuestion[];
 
+  /**
+   * Cuántas preguntas le tocan a cada persona. Si es menor que las que hay, se
+   * sortean en cada visita (banco de preguntas); vacío = todas, en orden.
+   */
+  @Column({ type: 'int', nullable: true })
+  quizSize?: number | null;
+
   /** Mientras sea false el día se muestra como "en preparación" */
   @Column({ type: 'boolean', default: false })
   published!: boolean;
@@ -193,6 +202,10 @@ export class FiestaEntry {
   /** Índice elegido por pregunta; null = aún no respondió */
   @Column({ type: 'jsonb', nullable: true })
   answers?: number[] | null;
+
+  /** Qué preguntas respondió (ids), en el mismo orden que `answers` */
+  @Column({ type: 'jsonb', nullable: true })
+  questionIds?: string[] | null;
 
   @Column({ type: 'int', default: 0 })
   correct!: number;

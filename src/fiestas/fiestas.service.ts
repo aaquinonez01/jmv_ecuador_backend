@@ -32,6 +32,7 @@ import {
   FiestaEntry,
   FiestaMode,
   FiestaPhoto,
+  FiestaQuestion,
   PhotoStatus,
   Reaction,
   REACTIONS,
@@ -274,6 +275,44 @@ export class FiestasService {
     return user as User & { comunidad: NonNullable<User['comunidad']> };
   }
 
+  /** Preguntas que entran al sorteo (las retiradas solo quedan para repasar) */
+  private activeQuestions(day: FiestaDay) {
+    return day.questions.filter((q) => !q.retired);
+  }
+
+  /** Cuántas preguntas responde cada persona */
+  private quizCount(day: FiestaDay) {
+    const active = this.activeQuestions(day).length;
+    const size = day.quizSize ?? 0;
+    return size > 0 && size < active ? size : active;
+  }
+
+  /** Las preguntas de una visita: todas en orden, o un sorteo si el día tiene banco */
+  private drawQuestions(day: FiestaDay) {
+    const active = this.activeQuestions(day);
+    const size = this.quizCount(day);
+    if (size >= active.length) return active;
+    const pool = [...active];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, size);
+  }
+
+  /** Las preguntas que respondió una persona, alineadas con sus respuestas */
+  private answeredQuestions(day: FiestaDay, entry: FiestaEntry) {
+    const all = (entry.answers ?? []).map((yours, i) => ({
+      yours,
+      q: entry.questionIds?.length
+        ? day.questions.find((x) => x.id === entry.questionIds![i])
+        : day.questions[i],
+    }));
+    return all.filter(
+      (x): x is { yours: number; q: FiestaQuestion } => Boolean(x.q),
+    );
+  }
+
   private resultView(day: FiestaDay, entry: FiestaEntry) {
     return {
       correct: entry.correct,
@@ -281,13 +320,13 @@ export class FiestasService {
       points: entry.points,
       onTime: entry.onTime,
       purposeDone: entry.purposeDone,
-      questions: day.questions.map((q, i) => ({
+      questions: this.answeredQuestions(day, entry).map(({ q, yours }) => ({
         id: q.id,
         prompt: q.prompt,
         options: q.options,
         correctIndex: q.correctIndex,
         explanation: q.explanation ?? null,
-        yours: entry.answers?.[i] ?? null,
+        yours: yours ?? null,
       })),
     };
   }
@@ -337,7 +376,7 @@ export class FiestasService {
           state,
           isToday: d.date === today,
           title: state === 'open' ? d.title : null,
-          questionCount: state === 'open' ? d.questions.length : 0,
+          questionCount: state === 'open' ? this.quizCount(d) : 0,
           hasPurpose: state === 'open' && Boolean(d.purpose),
         };
       }),
@@ -360,7 +399,7 @@ export class FiestasService {
       prayer: day.prayer ?? null,
       purpose: day.purpose ?? null,
       source: day.source ?? null,
-      questions: day.questions.map((q) => ({
+      questions: this.drawQuestions(day).map((q) => ({
         id: q.id,
         prompt: q.prompt,
         options: q.options,
@@ -417,13 +456,32 @@ export class FiestasService {
     preview = false,
   ) {
     const { fiesta, day } = await this.openDay(slug, n, preview);
-    if (day.questions.length === 0)
+    const active = this.activeQuestions(day);
+    if (active.length === 0)
       throw new BadRequestException('Este día no tiene preguntas.');
-    if (dto.answers.length !== day.questions.length)
+    // Con banco de preguntas, quien responde dice cuáles le tocaron
+    const size = this.quizCount(day);
+    let asked = active;
+    if (size < active.length) {
+      const ids = dto.questionIds ?? [];
+      const found = ids
+        .map((id) => active.find((q) => q.id === id))
+        .filter((q): q is FiestaQuestion => Boolean(q));
+      if (
+        ids.length !== size ||
+        new Set(ids).size !== size ||
+        found.length !== size
+      )
+        throw new BadRequestException(
+          'Las preguntas cambiaron. Vuelve a cargar la página para responder.',
+        );
+      asked = found;
+    }
+    if (dto.answers.length !== asked.length)
       throw new BadRequestException('Responde todas las preguntas.');
 
     const rules = await this.rules();
-    const correct = day.questions.reduce(
+    const correct = asked.reduce(
       (a, q, i) => a + (dto.answers[i] === q.correctIndex ? 1 : 0),
       0,
     );
@@ -441,7 +499,8 @@ export class FiestasService {
         await m.query(
           `UPDATE fiesta_entries
             SET answers = $3::jsonb, correct = $4, total = $5, "onTime" = $6,
-                "answeredAt" = now(), points = points + $7
+                "answeredAt" = now(), points = points + $7,
+                "questionIds" = $8::jsonb
           WHERE "dayId" = $1 AND "userId" = $2 AND answers IS NULL
           RETURNING id`,
           [
@@ -449,9 +508,10 @@ export class FiestasService {
             userId,
             JSON.stringify(dto.answers),
             correct,
-            day.questions.length,
+            asked.length,
             onTime,
             earned,
+            JSON.stringify(asked.map((q) => q.id)),
           ],
         ),
       );
@@ -1240,6 +1300,7 @@ export class FiestasService {
           options,
           correctIndex: q.correctIndex,
           explanation: q.explanation ?? null,
+          ...(q.retired ? { retired: true } : {}),
         };
       });
     }
